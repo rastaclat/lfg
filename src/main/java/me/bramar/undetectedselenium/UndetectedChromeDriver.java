@@ -12,6 +12,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.Delegate;
 import org.openqa.selenium.*;
+import org.openqa.selenium.bidi.BiDi;
 import org.openqa.selenium.bidi.HasBiDi;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
@@ -336,6 +337,11 @@ public class UndetectedChromeDriver implements WebDriver, JavascriptExecutor, Ha
 
     public static UCBuilder builder() {
         return new UCBuilder();
+    }
+
+    @Override
+    public Optional<BiDi> maybeGetBiDi() {
+        return Optional.empty();
     }
 
     @Accessors(fluent = true) @Setter @NoArgsConstructor(access = AccessLevel.PRIVATE)

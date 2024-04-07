@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.AnchorPane?>
+<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="me.bramar.task.controller.MainController">
+    <children>
+        <MenuBar>
+            <menus>
+                <Menu text="文件">
+                    <items>
+                        <MenuItem onAction="#handleImportCvv" text="导入资料"/>
+                       <!-- <MenuItem onAction="#handleImportTask" text="导入任务"/>-->
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
+        <TabPane layoutX="3.0" layoutY="25.0" prefHeight="550.0" prefWidth="800.0" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab fx:id="homeTab" text="主页">
+                    <content>
+                        <fx:include source="homeTable.fxml"/>
+                    </content>
+                </Tab>
+              <!--  <Tab fx:id="taskTable" text="任务">
+                    <content>
+                        <fx:include source="taskTable.fxml"/>
+                    </content>
+                </Tab>
+                <Tab fx:id="proxyTable" text="代理">
+                    <content>
+                        <fx:include source="proxyTable.fxml"/>
+                    </content>
+                </Tab>
+                <Tab text="配置">
+                    <content>
+                        <fx:include source="configTab.fxml"/>
+                    </content>
+                </Tab>-->
+            </tabs>
+        </TabPane>
+    </children>
+</AnchorPane>

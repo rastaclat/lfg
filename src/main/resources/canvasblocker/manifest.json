@@ -1,0 +1,46 @@
+{
+   "action": {
+   },
+   "background": {
+      "service_worker": "worker.js"
+   },
+   "content_scripts": [ {
+      "all_frames": true,
+      "js": [ "/data/inject/main.js" ],
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "matches": [ "*://*/*" ],
+      "run_at": "document_start",
+      "world": "MAIN"
+   }, {
+      "all_frames": true,
+      "js": [ "/data/inject/isolated.js" ],
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "matches": [ "*://*/*" ],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+   } ],
+   "description": "Prevent HTML canvas element from generating a unique identification key to protect user's privacy",
+   "homepage_url": "https://webextension.org/listing/canvas-fingerprint-blocker.html",
+   "host_permissions": [ "*://*/*" ],
+   "icons": {
+      "128": "/data/icons/128.png",
+      "16": "/data/icons/16.png",
+      "256": "/data/icons/256.png",
+      "32": "/data/icons/32.png",
+      "48": "/data/icons/48.png",
+      "512": "/data/icons/512.png",
+      "64": "/data/icons/64.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlx476nV8pTYBWXtFjbT1ZyGQiBXHD6ZrW03nb7cMGt4Y+lIcPGGEUyVOZ4NY97SsEtilysJcMMLDX2BxATn30Qa7fOphY+5gZT+sTOONL7wsNoUMtMFV7knQCnfh8wYP8XD/k/Bz6aMxvIarQz2dWgaZq08pPTxD70LLqEuxzsS2np62Tu0ubL6zsXtpvrizpKdWF+dsC0muJJj8N1WOE07uPAzzOd5qoxgzZVf8rKea40hX62fIsC7W0xRQAH9SgZ+GxRUOyGtjkfO5+15Xyjb0i6QUW4DuGOCwF1GGbx73smWcQpQIBJs/xmH6AJ17OFNzF+karTbsGsXJFkHMbQIDAQAB",
+   "manifest_version": 3,
+   "name": "Canvas Blocker - Fingerprint Protect",
+   "options_ui": {
+      "open_in_tab": true,
+      "page": "/data/options/index.html"
+   },
+   "permissions": [ "notifications", "storage", "contextMenus", "scripting" ],
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "0.2.0"
+}

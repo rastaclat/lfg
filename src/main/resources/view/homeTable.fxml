@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.fxml.FXML?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+
+<?import javafx.scene.control.ScrollPane?>
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="me.bramar.task.controller.HomeTableController" spacing="10">
+    <ScrollPane hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED">
+        <TableView fx:id="cvvView" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="selectColumn" minWidth="30" prefWidth="30">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="selected"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="cardNumber" minWidth="8.0" prefWidth="120" text="card">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="cardNumber"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="month" minWidth="8" prefWidth="60" text="month">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="month"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="year" minWidth="8" prefWidth="60" text="year">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="year"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="securityCode" minWidth="8" prefWidth="70" text="code">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="securityCode"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="fullName" minWidth="8" prefWidth="90" text="full name">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="fullName"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="address" minWidth="8" prefWidth="180" text="address">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="address"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="city" minWidth="8" prefWidth="90" text="city">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="city"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="phoneNumber" minWidth="8" prefWidth="110" text="phone">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="phoneNumber"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="state" minWidth="8" prefWidth="90" text="state">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="state"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="zipCode" minWidth="8" prefWidth="90" text="zipcode">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="zipCode"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="email" minWidth="8" prefWidth="120" text="mail">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="email"/>
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="password" minWidth="8" prefWidth="120" text="password">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="password"/>
+                    </cellValueFactory>
+                </TableColumn>
+            </columns>
+        </TableView>
+    </ScrollPane>
+    <!-- 在这里添加 HBox 来包裹按钮 -->
+    <HBox spacing="10"> <!-- spacing 属性设置按钮之间的间距 -->
+        <Button text="全选" fx:id="selectAllButton"/>
+        <Button text="删除" fx:id="deleteButton"/>
+        <Button text="编辑" fx:id="modifyButton" onAction="#modifyCvvData"/>
+        <Button text="保存" fx:id="saveButton" onAction="#saveCvvData" visible="false"/>
+        <Button text="取消" fx:id="restoreButton" onAction="#restoreCvvData" visible="false"/>
+    </HBox>
+    <HBox spacing="10"> <!-- spacing 属性设置按钮之间的间距 -->
+        <Button text="执行" fx:id="executeButton" onAction="#executeTask"/>
+    </HBox>
+</VBox>

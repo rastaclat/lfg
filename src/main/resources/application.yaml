@@ -1,0 +1,27 @@
+server:
+  port: 8889
+spring:
+  application:
+    name: taskAuto
+  datasource:
+    driver-class-name: org.h2.Driver
+    username: root
+    password: test
+    url: jdbc:h2:file:./db/myH2Database
+  h2:
+    console:
+      enabled: true
+      path: /h2
+      settings:
+        web-allow-others: true
+  sql:
+    init:
+      platform: h2
+      mode: always
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+forest:
+  backend: httpclient
+  timeout: 10000
