@@ -33,6 +33,13 @@ public class Test2 {
     }
 
     public static void test3() throws IOException, ReflectiveOperationException, URISyntaxException {
+
+        ChromeOptions chromeOptions = new ChromeOptions();
+
+        String chromeBinaryPath = "F:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
+        chromeOptions.setBinary(chromeBinaryPath);
+
+        // 加载两个扩展目录
         // 获取扩展目录的绝对路径
         URL proExtensionDirectoryURL = Test2.class.getClassLoader().getResource("pro_1.1.30");
         if (proExtensionDirectoryURL == null) {
@@ -48,12 +55,6 @@ public class Test2 {
         }
         String canvasBlockerExtensionDirectoryPath = Paths.get(canvasBlockerExtensionDirectoryURL.toURI()).toFile().getAbsolutePath();
 
-        ChromeOptions chromeOptions = new ChromeOptions();
-
-        String chromeBinaryPath = "F:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
-        chromeOptions.setBinary(chromeBinaryPath);
-
-        // 加载两个扩展目录
         chromeOptions.addArguments("--load-extension=" + proExtensionDirectoryPath + "," + canvasBlockerExtensionDirectoryPath);
 
         // 添加额外的隐匿模式和性能优化选项

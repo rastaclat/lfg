@@ -21,11 +21,14 @@ import me.bramar.task.entity.CreditCardInfo;
 import me.bramar.task.service.ICreditCardInfoService;
 import me.bramar.task.utils.NameParser;
 import me.bramar.task.utils.PhoneNumberUtils;
+import me.bramar.task.utils.XjpDsnUtils;
 import net.datafaker.Faker;
 import net.datafaker.providers.base.Address;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -422,12 +425,16 @@ public class HomeTableController implements Initializable {
                         continue;
                     }
                     // 执行具体的任务逻辑
-                    System.out.println("任务执行中...");
                     try {
-                        Thread.sleep(1000); // 模拟任务执行耗时
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+                        XjpDsnUtils.executeMethod();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    } catch (ReflectiveOperationException e) {
+                        throw new RuntimeException(e);
+                    } catch (URISyntaxException e) {
+                        throw new RuntimeException(e);
                     }
+
                 }
             });
         }
