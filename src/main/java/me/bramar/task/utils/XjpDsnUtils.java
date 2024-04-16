@@ -24,6 +24,7 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -125,47 +126,15 @@ public class XjpDsnUtils {
             System.out.println(menuItem.getText());
         }*/
 
-        // 使用JavascriptExecutor来执行JavaScript
-        JavascriptExecutor js = (JavascriptExecutor) driver;
+        // 通过XPath找到图片
+        WebElement captchaElement = driver.findElement(By.xpath("//img[@alt='captcha']"));
 
-        // 通过XPath获取图片元素
-        WebElement imgElement = (WebElement) js.executeScript(
-                "var captchaImage = document.evaluate(\"//img[@alt='captcha']\", document, null, XPathResult.ANY_TYPE, null);" +
-                        "return captchaImage.iterateNext();"
-        );
-        String captchaUrl = "";
-        if (imgElement != null) {
-            // 获取并打印图片的SRC属性
-            captchaUrl = imgElement.getAttribute("src");
-            System.out.println("Captcha Image SRC: " + captchaUrl);
-        } else {
-            System.out.println("Captcha image not found");
-        }
+        // 截图该元素
+        File screenshot = captchaElement.getScreenshotAs(OutputType.FILE);
+        DDDDOcrUtil.getCode(Base64.encode(screenshot));
 
-        if (StrUtil.isNotBlank(captchaUrl)) {
-            // 打开远程 URL 的 InputStream
-            InputStream inputStream = new URL(captchaUrl).openStream();
 
-            // 使用 Hutool 将 InputStream 转换为 InputStream
-            InputStream resultInputStream = IoUtil.toStream(inputStream.readAllBytes());
 
-            String code = DDDDOcrUtil.getCode(resultInputStream);
-            String base64Code = DDDDOcrUtil.getCode("base64");
-            // 关闭 InputStream
-            resultInputStream.close();
-
-           /* Map<String, Object> paramsMap = new HashMap<>();
-            paramsMap.put("clientKey", "2129959a2230c41cec9d14f3ea14eaf4d0a9eaf138536");
-            Map<String, String> taskMap = new HashMap<>();
-            taskMap.put("type", "ImageToTextTaskTest");
-            taskMap.put("body", Base64.encode(capathUrl));
-            paramsMap.put("task", taskMap);
-            Object execute = Forest.post("https://api.yescaptcha.com")
-                    .addBody(paramsMap).execute();
-            LinkedTreeMap body = (LinkedTreeMap) execute;
-           // String yzm = jsonObject.getJSONObject("solution").getStr("text");
-            //System.out.println(yzm);*/
-        }
 
         w();
         driver.quit();
