@@ -1,38 +1,25 @@
 package me.bramar.task.utils;
 
 import cn.hutool.core.codec.Base64;
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONObject;
-import com.dtflys.forest.Forest;
-import com.dtflys.forest.http.ForestBody;
-import com.dtflys.forest.http.ForestRequest;
-import com.dtflys.forest.http.ForestResponse;
-import com.dtflys.forest.http.body.NameValueRequestBody;
-import com.google.gson.JsonObject;
-import com.google.gson.internal.LinkedTreeMap;
 import com.mmg.ddddocr4j.utils.DDDDOcrUtil;
 import me.bramar.undetectedselenium.SeleniumStealthOptions;
 import me.bramar.undetectedselenium.Test2;
 import me.bramar.undetectedselenium.UndetectedChromeDriver;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriverLogLevel;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.*;
+import java.util.Random;
+import java.util.Scanner;
 
 /**
  * @author qtq
@@ -43,15 +30,15 @@ public class XjpDsnUtils {
     private static final String testUrl = "https://www.rwsentosa.com/en/attractions/universal-studios-singapore";
     public static int waitTime = 60;
 
-    public static void main(String[] args) throws IOException, ReflectiveOperationException, URISyntaxException, InterruptedException {
+    public static void main(String[] args) throws IOException, ReflectiveOperationException, URISyntaxException {
         executeMethod();
     }
 
-    public static void executeMethod() throws IOException, ReflectiveOperationException, URISyntaxException {
+    public static void executeMethod() throws IOException, ReflectiveOperationException, URISyntaxException{
 
         ChromeOptions chromeOptions = new ChromeOptions();
 
-        String chromeBinaryPath = "E:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
+        String chromeBinaryPath = "F:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
         chromeOptions.setBinary(chromeBinaryPath);
 
         // 加载两个扩展目录
@@ -107,32 +94,14 @@ public class XjpDsnUtils {
         //选择美国
         click(wait, driver, By.xpath("//*/text()[normalize-space(.)='United States of America']/parent::*"));
 
-
-        /*// 找到需要右键点击的元素
-        WebElement element = driver.findElement(By.xpath("//img[@alt='captcha']"));
-
-        // 创建 Actions 对象
-        Actions actions = new Actions(driver);
-
-        // 右键点击指定的元素
-        actions.contextClick(element).perform();
-
-        // 找到右键菜单中的所有项
-        List<WebElement> menuItems = driver.findElements(By.xpath("//img[@alt='captcha']"));
-
-        // 打印菜单中的所有项
-        System.out.println("右键菜单中的所有项:");
-        for (WebElement menuItem : menuItems) {
-            System.out.println(menuItem.getText());
-        }*/
-
         // 通过XPath找到图片
         WebElement captchaElement = driver.findElement(By.xpath("//img[@alt='captcha']"));
 
         // 截图该元素
         File screenshot = captchaElement.getScreenshotAs(OutputType.FILE);
-        DDDDOcrUtil.getCode(Base64.encode(screenshot));
+        String code = DDDDOcrUtil.getCode(Base64.encode(screenshot));
 
+        fillInput(wait,driver, "//input[@id='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_70b16536-6289-4b9d-ba30-3de308232b21__CaptchaCode']",code);
 
 
 
@@ -179,7 +148,7 @@ public class XjpDsnUtils {
         System.out.println("Quitting");
     }
 
-    private static void fillInput(WebDriverWait wait, WebDriver driver, String xpath, String value) throws InterruptedException {
+    private static void fillInput(WebDriverWait wait, WebDriver driver, String xpath, String value) {
         WebElement element = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(xpath)));
         Random random = new Random();
         element.clear();
