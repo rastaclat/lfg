@@ -100,7 +100,7 @@ public class XjpDsnUtils {
         // 截图该元素
         File screenshot = captchaElement.getScreenshotAs(OutputType.FILE);
         String code = DDDDOcrUtil.getCode(Base64.encode(screenshot));
-
+        System.out.println("验证码："+code);
         fillInput(wait,driver, "//input[@id='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_70b16536-6289-4b9d-ba30-3de308232b21__CaptchaCode']",code);
 
 
