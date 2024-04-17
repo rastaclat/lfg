@@ -80,6 +80,12 @@
                         <PropertyValueFactory property="password"/>
                     </cellValueFactory>
                 </TableColumn>
+
+                <TableColumn fx:id="isActive" minWidth="8" prefWidth="120" text="isActive">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="isActive"/>
+                    </cellValueFactory>
+                </TableColumn>
             </columns>
         </TableView>
     </ScrollPane>

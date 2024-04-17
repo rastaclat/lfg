@@ -19,6 +19,17 @@ public class PhoneNumberUtils {
         return phoneNumber; // Return original phone number if parsing failed
     }
 
+    public static Integer getCountryCode(String phoneNumber, String defaultRegion) {
+        PhoneNumberUtil instance = PhoneNumberUtil.getInstance();
+        try {
+            Phonenumber.PhoneNumber numberProto = instance.parse(phoneNumber, defaultRegion);
+            return numberProto.getCountryCode();
+        } catch (NumberParseException e) {
+            System.err.println("NumberParseException was thrown: " + e.toString());
+        }
+        return null;
+    }
+
     public static void main(String[] args) {
         String internationalNumber = "785-564-1776";
         String withoutCountryCode = removeCountryCode(internationalNumber, "US");

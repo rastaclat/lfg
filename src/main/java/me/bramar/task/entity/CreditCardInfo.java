@@ -28,12 +28,14 @@ public class CreditCardInfo {
     private String address;
     private String city;
     private String phoneNumber;
+    private Integer phoneNumberCountry;
     private String state;
     private String zipCode;
     private String email;
     private String password;
     private Integer successNum;
     private Integer failNum;
+    private String isActive; //1已使用,0未使用
 
     @TableField(exist = false)
     private String regionCode;

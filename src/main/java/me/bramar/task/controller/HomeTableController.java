@@ -24,6 +24,7 @@ import me.bramar.task.utils.PhoneNumberUtils;
 import me.bramar.task.utils.XjpDsnUtils;
 import net.datafaker.Faker;
 import net.datafaker.providers.base.Address;
+import net.datafaker.providers.base.Name;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -78,6 +79,8 @@ public class HomeTableController implements Initializable {
     private TableColumn<CreditCardInfo, String> email;
     @FXML
     private TableColumn<CreditCardInfo, String> password;
+    @FXML
+    private TableColumn<CreditCardInfo, String> isActive;
 
     @FXML
     private Button selectAllButton;
@@ -130,55 +133,59 @@ public class HomeTableController implements Initializable {
                             creditCardInfo.setLastName(name.get(1));
                         }
                     } else {
-                       /* Name name = faker.name();
+                        Name name = faker.name();
                         String fullName = name.fullName().intern();
                         creditCardInfo.setFullName(fullName);
                         creditCardInfo.setFirstName(name.firstName());
-                        creditCardInfo.setLastName(name.lastName());*/
+                        creditCardInfo.setLastName(name.lastName());
                     }
                     Address address = faker.address();
                     if (parts.length > 6 && StrUtil.isNotBlank(parts[5])) {
                         creditCardInfo.setAddress(parts[5].trim());
                     } else {
-                        //creditCardInfo.setAddress(address.streetAddress());
+                        creditCardInfo.setAddress(address.streetAddress());
                     }
                     if (parts.length > 7 && StrUtil.isNotBlank(parts[6])) {
                         creditCardInfo.setCity(parts[6].trim());
                     } else {
-                        // creditCardInfo.setCity(address.city().trim());
+                        creditCardInfo.setCity(address.city().trim());
                     }
                     if (parts.length > 8 && StrUtil.isNotBlank(parts[7])) {
                         String number = parts[7].trim();
                         String phoneNum = PhoneNumberUtils.removeCountryCode(number, "US");
+                        Integer countryCode = PhoneNumberUtils.getCountryCode(number, "US");
                         creditCardInfo.setPhoneNumber(phoneNum);
+                        creditCardInfo.setPhoneNumberCountry(countryCode);
                     } else {
-                        /*String phoneNumber = faker.phoneNumber().phoneNumber();
+                        String phoneNumber = faker.phoneNumber().phoneNumber();
                         String phoneNum = PhoneNumberUtils.removeCountryCode(phoneNumber, "US");
-                        creditCardInfo.setPhoneNumber(phoneNum);*/
+                        Integer countryCode = PhoneNumberUtils.getCountryCode(phoneNumber, "US");
+                        creditCardInfo.setPhoneNumberCountry(countryCode);
+                        creditCardInfo.setPhoneNumber(phoneNum);
                     }
 
                     if (parts.length > 9 && StrUtil.isNotBlank(parts[8])) {
                         creditCardInfo.setState(parts[8]);
                     } else {
-                        // creditCardInfo.setState(address.state().trim());
+                        creditCardInfo.setState(address.state().trim());
                     }
 
                     if (parts.length > 10 && StrUtil.isNotBlank(parts[9])) {
                         creditCardInfo.setZipCode(parts[9]);
                     } else {
-                        //creditCardInfo.setZipCode(address.zipCode().trim());
+                        creditCardInfo.setZipCode(address.zipCode().trim());
                     }
 
                     if (parts.length > 11 && StrUtil.isNotBlank(parts[10])) {
                         creditCardInfo.setEmail(parts[10]);
                     } else {
-                        //creditCardInfo.setEmail(faker.internet().emailAddress().intern());
+                        creditCardInfo.setEmail(faker.internet().emailAddress().intern());
                     }
 
                     if (parts.length > 12 && StrUtil.isNotBlank(parts[11])) {
                         creditCardInfo.setPassword(parts[11]);
                     } else {
-                        //creditCardInfo.setPassword(faker.internet().password(8, 13, true, true).intern());
+                        creditCardInfo.setPassword(faker.internet().password(8, 13, true, true).intern());
                     }
 
                     dataList.add(creditCardInfo);
@@ -250,6 +257,7 @@ public class HomeTableController implements Initializable {
         setupEditableColumn(zipCode, "zipCode", new DefaultStringConverter(), CreditCardInfo::setZipCode);
         setupEditableColumn(email, "email", new DefaultStringConverter(), CreditCardInfo::setEmail);
         setupEditableColumn(password, "password", new DefaultStringConverter(), CreditCardInfo::setPassword);
+        setupEditableColumn(isActive, "isActive", new DefaultStringConverter(), CreditCardInfo::setIsActive);
 
         selectAllButton.setOnAction(event -> selectAll());
         deleteButton.setOnAction(event -> deleteSelected());
@@ -368,6 +376,7 @@ public class HomeTableController implements Initializable {
         setColumnEditable(zipCode, isEdit);
         setColumnEditable(email, isEdit);
         setColumnEditable(password, isEdit);
+        setColumnEditable(isActive, isEdit);
     }
 
     private <T> void setColumnEditable(TableColumn<CreditCardInfo, T> column, boolean editable) {
@@ -413,33 +422,38 @@ public class HomeTableController implements Initializable {
     private void startTasks() {
         // 示例任务：在这里启动您的具体任务
         // 这里仅为示例，您需要替换为实际任务逻辑
-        for (int i = 0; i < 5; i++) {
-            executorService.submit(() -> {
-                while (running.get()) {
-                    if (paused.get()) {
-                        try {
-                            Thread.sleep(100); // 暂停时简单休眠
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
+        List<CreditCardInfo> list = creditCardInfoService.list();
+        if (CollectionUtil.isNotEmpty(list)) {
+            for (int i = 0; i < list.size(); i++) {
+                CreditCardInfo creditCardInfo = list.get(i);
+                executorService.submit(() -> {
+                    while (running.get()) {
+                        if (paused.get()) {
+                            try {
+                                Thread.sleep(100); // 暂停时简单休眠
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                            continue;
                         }
-                        continue;
-                    }
-                    // 执行具体的任务逻辑
-                    try {
-                        XjpDsnUtils.executeMethod();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    } catch (ReflectiveOperationException e) {
-                        throw new RuntimeException(e);
-                    } catch (URISyntaxException e) {
-                        throw new RuntimeException(e);
-                    }
+                        // 执行具体的任务逻辑
+                        try {
+                            XjpDsnUtils.executeMethod(creditCardInfo);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        } catch (ReflectiveOperationException e) {
+                            throw new RuntimeException(e);
+                        } catch (URISyntaxException e) {
+                            throw new RuntimeException(e);
+                        }
 
-                }
-            });
+                    }
+                });
+            }
+            updateButtonLabel();
         }
-        updateButtonLabel();
     }
+
 
     private void updateButtonLabel() {
         if (paused.get()) {
