@@ -3,6 +3,7 @@ package me.bramar.task.utils;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.collection.CollectionUtil;
 import com.mmg.ddddocr4j.utils.DDDDOcrUtil;
+import lombok.extern.slf4j.Slf4j;
 import me.bramar.task.entity.CreditCardInfo;
 import me.bramar.undetectedselenium.SeleniumStealthOptions;
 import me.bramar.undetectedselenium.Test2;
@@ -29,6 +30,7 @@ import java.util.Scanner;
  * @author qtq
  * @since 2024-04-02 17:32
  */
+@Slf4j
 public class XjpDsnUtils {
 
     private static final String testUrl = "https://www.rwsentosa.com/en/attractions/universal-studios-singapore";
@@ -42,7 +44,7 @@ public class XjpDsnUtils {
 
         ChromeOptions chromeOptions = new ChromeOptions();
 
-        String chromeBinaryPath = "E:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
+        String chromeBinaryPath = "F:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
         chromeOptions.setBinary(chromeBinaryPath);
 
         // 加载两个扩展目录
@@ -97,127 +99,154 @@ public class XjpDsnUtils {
 
         // 尝试提交表单
         click(wait, driver, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_b7bbe0b3-b58f-4e40-9947-60b17e7a3136"));
-
+        log.info("尝试提交表单");
+        log.info("开始检查错误信息");
         submitFormAndHandleErrors(driver, wait, creditCardInfo);
         w();
         driver.quit();
     }
 
     private static void agreeTerms(WebDriverWait wait, WebDriver driver) {
-        //点击同意
-        click(wait, driver, By.xpath("//label[@for='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_c4da8c29-4028-4f6a-90a9-6d5469db9186__Value']//span[@class='custom-checkbox']"));
-        click(wait, driver, By.xpath("//label[contains(text(),'I consent to Resorts World Sentosa (RWS) to collec')]"));
-        //选择email
-        click(wait, driver, By.xpath("//label[normalize-space()='E-mail']"));
+        // 点击同意，仅在未勾选时勾选
+        clickCheck(wait, driver, By.xpath("//label[@for='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_c4da8c29-4028-4f6a-90a9-6d5469db9186__Value']//span[@class='custom-checkbox']"), true);
+        log.info("处理了I agree and consent to");
+
+        // 选择email, 仅在未勾选时勾选
+        clickCheck(wait, driver, By.xpath("//label[contains(text(),'I consent to Resorts World Sentosa (RWS) to collect')]"), true);
+        log.info("处理了RWS consent");
+
+        // 勾选email, 仅在未勾选时勾选
+        clickCheck(wait, driver, By.xpath("//label[normalize-space()='E-mail']"), true);
+        log.info("处理了email勾选");
     }
 
     //输入电话号码
     private static void fillInputPhone(CreditCardInfo creditCardInfo, WebDriverWait wait, WebDriver driver) {
         click(wait, driver, By.xpath("(.//*[normalize-space(text()) and normalize-space(.)='*Contact number'])[1]/following::div[4]"));
+        log.info("点击国际区号下拉框");
         click(wait, driver, By.xpath("//*/text()[normalize-space(.)='1']/parent::*"));
+        log.info("选择区号为1");
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_c8528200-a461-4c37-8fe5-a706e760f5db__Value"), creditCardInfo.getCardNumber());
+        log.info("输入电话号码:{}",creditCardInfo.getCardNumber());
     }
 
     //选择国籍
     private static void fillInputNationality(WebDriverWait wait, WebDriver driver) {
         click(wait, driver, By.xpath("//div[@id='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_bf5d3d53-129f-4d58-85b1-30357e3a9e95__Value']/div/div"));
+        log.info("点击选择国籍下拉列表框");
         click(wait, driver, By.xpath("//div[@id='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_bf5d3d53-129f-4d58-85b1-30357e3a9e95__Value']/div[2]/div/div[18]"));
+        log.info("选择美国人");
     }
 
     //输入email
     private static void fillInputEmail(CreditCardInfo creditCardInfo, WebDriverWait wait) {
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_172fafce-9ab6-41f1-b644-0e405e9e2313__Value"), creditCardInfo.getEmail());
+        log.info("输入电子邮件:{}",creditCardInfo.getEmail());
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_172fafce-9ab6-41f1-b644-0e405e9e2313__ConfirmEmail"), creditCardInfo.getEmail());
+        log.info("确认电子邮件:{}",creditCardInfo.getEmail());
     }
 
     //输入姓名
     private static void fillInputName(CreditCardInfo creditCardInfo, WebDriverWait wait) {
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_12bec712-0abe-4228-b8a6-8a3bec1ba62a__Value"), creditCardInfo.getFirstName());
+        log.info("输入第一个名字:{}",creditCardInfo.getFirstName());
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_f84c0c3e-e3c5-4896-97cf-f52320714d65__Value"), creditCardInfo.getLastName());
+        log.info("输入最后一个名字:{}",creditCardInfo.getLastName());
     }
 
     //选择国家
     private static void selectRegion(WebDriverWait wait, WebDriver driver) {
         //选择国家
         click(wait, driver, By.xpath("//div[@id='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_26997082-04fe-42fa-aad7-54b764039648__Value']/div/div"));
+        log.info("选择国家下拉框");
         //选择美国
         click(wait, driver, By.xpath("//*/text()[normalize-space(.)='United States of America']/parent::*"));
+        log.info("选择美国");
     }
 
     //输入验证码
     private static void fillInputCaptcha(WebDriverWait wait, WebDriver driver) {
         // 通过XPath找到图片
         WebElement captchaElement = driver.findElement(By.xpath("//img[@alt='captcha']"));
-
+        log.info("找到验证码图片");
         // 截图该元素
         File screenshot = captchaElement.getScreenshotAs(OutputType.FILE);
         String code = DDDDOcrUtil.getCode(Base64.encode(screenshot)).toLowerCase();
-        System.out.println("验证码：" + code);
+        log.info("解析验证码为:"+code);
         fillInput(wait, By.xpath("//input[@id='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_70b16536-6289-4b9d-ba30-3de308232b21__CaptchaCode']"), code);
+        log.info("输入验证码");
     }
 
     //检查提交错误
     public static void submitFormAndHandleErrors(WebDriver driver, WebDriverWait wait, CreditCardInfo creditCardInfo) {
-        for (int i = 0; i < 5; i++) {
+        final int MAX_ATTEMPTS = 5;
+        final By errorLocator = By.xpath("//div[@class='form-errors']/div[@class='invalid']//div");
+
+        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             boolean isError = false;
 
-            //出现未输入姓名提示
-            List<WebElement> firstNameElements = driver.findElements(By.xpath("//p[normalize-space()='*First name is required.']"));
-            List<WebElement> lastNameElement = driver.findElements(By.xpath("//p[normalize-space()='*Last name is required.']"));
-            if (CollectionUtil.isNotEmpty(firstNameElements) || CollectionUtil.isNotEmpty(lastNameElement)) {
-                isError = true;
-                fillInputName(creditCardInfo, wait);
+            // 等待错误消息最多5秒，然后获取所有错误消息
+            List<WebElement> errorMessages = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(errorLocator));
+            if (CollectionUtil.isNotEmpty(errorMessages)) {
+                log.info("发现错误:{}条", errorMessages.size());
+            }
+            for (WebElement errorMessageElement : errorMessages) {
+                String errorMessage = errorMessageElement.getText();
+                isError = true; // 设置错误标志为真
+
+                // 根据错误消息进行相应的处理
+                switch (errorMessage) {
+                    case "Please enter a valid verification code.":
+                        log.info("验证码错误,重新输入");
+                        fillInputCaptcha(wait, driver);
+                        break;
+                    case "*First name is required.":
+                        log.info("未输入第一个名字,重新输入");
+                        fillInputName(creditCardInfo, wait);
+                        break;
+                    case "*Last name is required.":
+                        log.info("未输入最后一个名字,重新输入");
+                        fillInputName(creditCardInfo, wait);
+                        break;
+                    case "*Email is required.":
+                        log.info("未输入邮箱,重新输入");
+                        fillInputEmail(creditCardInfo, wait);
+                        break;
+                    case "*Country / Region of Residence is required.":
+                        log.info("未选择国家,重新选择");
+                        selectRegion(wait, driver);
+                        break;
+                    case "*Nationality is required.":
+                        log.info("未选择国籍,重新选择");
+                        fillInputNationality(wait, driver);
+                        break;
+                    case "*Contact number is required.":
+                        log.info("未输入电话号码,重新输入");
+                        fillInputPhone(creditCardInfo, wait, driver);
+                        break;
+                    case "I agree and consent to: is required.":
+                        log.info("未勾选同意声明,重新勾选");
+                        agreeTerms(wait, driver);
+                        break;
+                    case "Unexpected error while saving consent details" :
+                        click(wait, driver, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_b7bbe0b3-b58f-4e40-9947-60b17e7a3136"));
+                        break;
+                    default:
+                        log.info("未预期的错误: {}", errorMessage);
+                        break;
+                }
             }
 
-            //出现未输入邮箱提示
-            List<WebElement> emailElement = driver.findElements(By.xpath("//p[normalize-space()='*Email is required.']"));
-            List<WebElement> confirmEmailElement = driver.findElements(By.xpath("//p[normalize-space()='The *Confirm Email and *Email do not match.']"));
-            if (CollectionUtil.isNotEmpty(emailElement) || CollectionUtil.isNotEmpty(confirmEmailElement)) {
-                isError = true;
-                //重新输入邮箱
-                fillInputEmail(creditCardInfo, wait);
-            }
-
-            //出现未选择国家
-            List<WebElement> regionElement = driver.findElements(By.xpath("//p[normalize-space()='*Country / Region of Residence is required.']"));
-            if (CollectionUtil.isNotEmpty(regionElement)) {
-                isError = true;
-                selectRegion(wait, driver);
-            }
-
-            //出现未选择国籍
-            List<WebElement> nationalityElement = driver.findElements(By.xpath("//p[normalize-space()='*Nationality is required.']"));
-            if (CollectionUtil.isNotEmpty(nationalityElement)) {
-                isError = true;
-                fillInputNationality(wait, driver);
-            }
-
-            //出现未选择国籍
-            List<WebElement> phoneElement = driver.findElements(By.xpath("//p[normalize-space()='*Contact number is required.']"));
-            if (CollectionUtil.isNotEmpty(phoneElement)) {
-                isError = true;
-                fillInputPhone(creditCardInfo, wait, driver);
-            }
-
-            //输入验证码
-            List<WebElement> captchaElement = driver.findElements(By.xpath("//p[normalize-space()='Please enter a valid verification code.']"));
-            if (CollectionUtil.isNotEmpty(captchaElement)) {
-                isError = true;
-                fillInputCaptcha(wait, driver);
-            }
-
-            //不存在错误
+            // 检查是否已处理所有错误，如果没有错误则退出循环
             if (!isError) {
                 break;
             } else {
-                //存在错误再次提交
-                // 尝试提交表单
+                log.info("存在错误再次提交,第{}次重新提交", attempt + 1);
+                // 存在错误再次提交表单
                 click(wait, driver, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_b7bbe0b3-b58f-4e40-9947-60b17e7a3136"));
             }
         }
-
     }
-
 
     public static void executeMethod() throws IOException, ReflectiveOperationException, URISyntaxException {
 
@@ -267,20 +296,29 @@ public class XjpDsnUtils {
     private static void commonExecuteMethod(WebDriverWait wait, UndetectedChromeDriver driver) {
         //点击预定
         click(wait, driver, By.xpath("//div[@id='root']/header/nav/div/div[2]/section/button"));
+        log.info("点击预定");
         //点击选择日期
         clickDate((JavascriptExecutor) driver);
+        log.info("点击选择日期");
         //点击立即预定
         click(wait, driver, By.xpath("//div[@id='root']/header/nav/div/div[2]/section/div/div/section/button"));
+        log.info("点击立即预定");
         //选择第一个项目
         click(wait, driver, By.xpath("//div[@id='container']/section/div[2]/div/div[2]/div/div[2]/div[2]/div[2]/button"));
+        log.info("选择第一个项目");
         //点击+1
         click(wait, driver, By.xpath("//span[4]"));
+        log.info("点击+1");
         //点击添加到购物车
         click(wait, driver, By.xpath("//*/text()[normalize-space(.)='Add To Cart']/parent::*"));
+        log.info("点击添加到购物车");
         //点击查看购物车
         click(wait, driver, By.xpath("//div[@id='root']/header/div[2]/div/div/div[2]/div/div[2]/div/a/div"));
+        log.info("点击查看购物车");
         //点击结算
         click(wait, driver, By.xpath("//*/text()[normalize-space(.)='Check out']/parent::*"));
+        log.info("点击结算");
+        //选择国家
         selectRegion(wait, driver);
 
         //输入验证码
@@ -369,6 +407,22 @@ public class XjpDsnUtils {
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
         }
         randomSleep(500, 3000);
+    }
+
+    private static void clickCheck(WebDriverWait wait, WebDriver driver, By byPath, boolean shouldBeChecked) {
+        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(byPath));
+        boolean isChecked = element.isSelected();
+        if ((shouldBeChecked && !isChecked) || (!shouldBeChecked && isChecked)) {
+            try {
+                element.click();
+            } catch (ElementClickInterceptedException e) {
+                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+            }
+            log.info((shouldBeChecked ? "勾选了" : "取消勾选了") + byPath.toString());
+            randomSleep(500, 3000);
+        } else {
+            log.info("无需改变勾选状态: " + byPath.toString());
+        }
     }
 
     private boolean checkVerificationFailure(WebDriver driver) {
