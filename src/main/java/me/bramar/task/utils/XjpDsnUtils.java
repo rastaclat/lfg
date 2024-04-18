@@ -2,6 +2,9 @@ package me.bramar.task.utils;
 
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
 import com.mmg.ddddocr4j.utils.DDDDOcrUtil;
 import lombok.extern.slf4j.Slf4j;
 import me.bramar.task.entity.CreditCardInfo;
@@ -9,7 +12,6 @@ import me.bramar.undetectedselenium.SeleniumStealthOptions;
 import me.bramar.undetectedselenium.Test2;
 import me.bramar.undetectedselenium.UndetectedChromeDriver;
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriverLogLevel;
@@ -22,6 +24,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -33,7 +36,8 @@ import java.util.Scanner;
 @Slf4j
 public class XjpDsnUtils {
 
-    private static final String testUrl = "https://www.rwsentosa.com/en/attractions/universal-studios-singapore";
+    //private static final String testUrl = "https://www.rwsentosa.com/en/attractions/universal-studios-singapore";
+    private static final String testUrl = "https://www.rwsentosa.com/en/reservations/attractionsearch?ThemeParkCode=USS&VisitDate={}&ticketType=1";
     public static int waitTime = 60;
 
     public static void main(String[] args) throws IOException, ReflectiveOperationException, URISyntaxException {
@@ -44,17 +48,17 @@ public class XjpDsnUtils {
 
         ChromeOptions chromeOptions = new ChromeOptions();
 
-        String chromeBinaryPath = "F:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
+        String chromeBinaryPath = "E:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
         chromeOptions.setBinary(chromeBinaryPath);
 
         // 加载两个扩展目录
         // 获取扩展目录的绝对路径
-        URL proExtensionDirectoryURL = Test2.class.getClassLoader().getResource("pro_1.1.30");
+        /*URL proExtensionDirectoryURL = Test2.class.getClassLoader().getResource("pro_1.1.30");
         if (proExtensionDirectoryURL == null) {
             System.err.println("Cannot find 'pro_1.1.30' extension directory in resources.");
             return;
         }
-        String proExtensionDirectoryPath = Paths.get(proExtensionDirectoryURL.toURI()).toFile().getAbsolutePath();
+        String proExtensionDirectoryPath = Paths.get(proExtensionDirectoryURL.toURI()).toFile().getAbsolutePath();*/
 
         URL canvasBlockerExtensionDirectoryURL = Test2.class.getClassLoader().getResource("canvasblocker");
         if (canvasBlockerExtensionDirectoryURL == null) {
@@ -63,9 +67,17 @@ public class XjpDsnUtils {
         }
         String canvasBlockerExtensionDirectoryPath = Paths.get(canvasBlockerExtensionDirectoryURL.toURI()).toFile().getAbsolutePath();
 
-        chromeOptions.addArguments("--load-extension=" + proExtensionDirectoryPath + "," + canvasBlockerExtensionDirectoryPath);
+        URL webRTCControlURL = Test2.class.getClassLoader().getResource("fjkmabmdepjfammlpliljpnbhleegehm_0.3.0");
+        if (webRTCControlURL == null) {
+            System.err.println("Cannot find 'webRTC control' extension directory in resources.");
+            return;
+        }
+        String webRTCControlPath = Paths.get(webRTCControlURL.toURI()).toFile().getAbsolutePath();
+
+        //chromeOptions.addArguments("--load-extension=" + proExtensionDirectoryPath + "," + canvasBlockerExtensionDirectoryPath + "," + webRTCLeakPreventURL);
+        chromeOptions.addArguments("--load-extension=" + canvasBlockerExtensionDirectoryPath + "," + webRTCControlPath);
         // 添加额外的隐匿模式和性能优化选项
-        chromeOptions.addArguments("--disable-blink-features=AutomationControlled");
+        //chromeOptions.addArguments("--disable-blink-features=AutomationControlled");
 
         UndetectedChromeDriver driver = UndetectedChromeDriver.builder()
                 .pageLoadStrategy(PageLoadStrategy.NONE)
@@ -75,8 +87,9 @@ public class XjpDsnUtils {
                 .options(chromeOptions)
                 .serviceBuilder(new ChromeDriverService.Builder().withSilent(true).withLogLevel(ChromiumDriverLogLevel.OFF))
                 .seleniumStealth(SeleniumStealthOptions.getDefault()).build();
-
-        driver.cloudflareGet(testUrl);
+        DateTime dateTime = DateUtil.offsetDay(new Date(), 2);
+        String newTestUrl = StrUtil.format(testUrl, DateUtil.format(dateTime, "yyyy-MM-dd"));
+        driver.cloudflareGet(newTestUrl);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(waitTime));
 
         //公共方法
@@ -102,8 +115,18 @@ public class XjpDsnUtils {
         log.info("尝试提交表单");
         log.info("开始检查错误信息");
         submitFormAndHandleErrors(driver, wait, creditCardInfo);
+
+        String cardNumber = creditCardInfo.getCardNumber();
+        if (cardNumber.startsWith("4")) {
+
+        } else if (cardNumber.startsWith("5")) {
+
+        }
+
+        //
+
         w();
-        driver.quit();
+         driver.quit();
     }
 
     private static void agreeTerms(WebDriverWait wait, WebDriver driver) {
@@ -126,8 +149,8 @@ public class XjpDsnUtils {
         log.info("点击国际区号下拉框");
         click(wait, driver, By.xpath("//*/text()[normalize-space(.)='1']/parent::*"));
         log.info("选择区号为1");
-        fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_c8528200-a461-4c37-8fe5-a706e760f5db__Value"), creditCardInfo.getCardNumber());
-        log.info("输入电话号码:{}",creditCardInfo.getCardNumber());
+        fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_c8528200-a461-4c37-8fe5-a706e760f5db__Value"), creditCardInfo.getPhoneNumber());
+        log.info("输入电话号码:{}", creditCardInfo.getPhoneNumber());
     }
 
     //选择国籍
@@ -141,17 +164,17 @@ public class XjpDsnUtils {
     //输入email
     private static void fillInputEmail(CreditCardInfo creditCardInfo, WebDriverWait wait) {
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_172fafce-9ab6-41f1-b644-0e405e9e2313__Value"), creditCardInfo.getEmail());
-        log.info("输入电子邮件:{}",creditCardInfo.getEmail());
+        log.info("输入电子邮件:{}", creditCardInfo.getEmail());
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_172fafce-9ab6-41f1-b644-0e405e9e2313__ConfirmEmail"), creditCardInfo.getEmail());
-        log.info("确认电子邮件:{}",creditCardInfo.getEmail());
+        log.info("确认电子邮件:{}", creditCardInfo.getEmail());
     }
 
     //输入姓名
     private static void fillInputName(CreditCardInfo creditCardInfo, WebDriverWait wait) {
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_12bec712-0abe-4228-b8a6-8a3bec1ba62a__Value"), creditCardInfo.getFirstName());
-        log.info("输入第一个名字:{}",creditCardInfo.getFirstName());
+        log.info("输入第一个名字:{}", creditCardInfo.getFirstName());
         fillInput(wait, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_f84c0c3e-e3c5-4896-97cf-f52320714d65__Value"), creditCardInfo.getLastName());
-        log.info("输入最后一个名字:{}",creditCardInfo.getLastName());
+        log.info("输入最后一个名字:{}", creditCardInfo.getLastName());
     }
 
     //选择国家
@@ -172,7 +195,7 @@ public class XjpDsnUtils {
         // 截图该元素
         File screenshot = captchaElement.getScreenshotAs(OutputType.FILE);
         String code = DDDDOcrUtil.getCode(Base64.encode(screenshot)).toLowerCase();
-        log.info("解析验证码为:"+code);
+        log.info("解析验证码为:" + code);
         fillInput(wait, By.xpath("//input[@id='fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_Fields_70b16536-6289-4b9d-ba30-3de308232b21__CaptchaCode']"), code);
         log.info("输入验证码");
     }
@@ -228,7 +251,7 @@ public class XjpDsnUtils {
                         log.info("未勾选同意声明,重新勾选");
                         agreeTerms(wait, driver);
                         break;
-                    case "Unexpected error while saving consent details" :
+                    case "Unexpected error while saving consent details":
                         click(wait, driver, By.id("fxb_75afc65d-8d35-403d-bd73-c48867e5eb18_b7bbe0b3-b58f-4e40-9947-60b17e7a3136"));
                         break;
                     default:
@@ -295,19 +318,19 @@ public class XjpDsnUtils {
 
     private static void commonExecuteMethod(WebDriverWait wait, UndetectedChromeDriver driver) {
         //点击预定
-        click(wait, driver, By.xpath("//div[@id='root']/header/nav/div/div[2]/section/button"));
-        log.info("点击预定");
+        //click(wait, driver, By.xpath("//div[@id='root']/header/nav/div/div[2]/section/button"));
+        //log.info("点击预定");
         //点击选择日期
-        clickDate((JavascriptExecutor) driver);
-        log.info("点击选择日期");
+        //clickDate((JavascriptExecutor) driver);
+        //log.info("点击选择日期");
         //点击立即预定
-        click(wait, driver, By.xpath("//div[@id='root']/header/nav/div/div[2]/section/div/div/section/button"));
-        log.info("点击立即预定");
-        //选择第一个项目
-        click(wait, driver, By.xpath("//div[@id='container']/section/div[2]/div/div[2]/div/div[2]/div[2]/div[2]/button"));
-        log.info("选择第一个项目");
+       // click(wait, driver, By.xpath("//div[@id='root']/header/nav/div/div[2]/section/div/div/section/button"));
+        //log.info("点击立即预定");
+        //选择项目
+        click(wait, driver, By.xpath("(.//*[normalize-space(text()) and normalize-space(.)='[SG Residents Exclusive] Universal Studios Singapore One-Day Ticket with Early Entry'])[1]/preceding::button[1]"));
+        log.info("选择项目");
         //点击+1
-        click(wait, driver, By.xpath("//span[4]"));
+        click(wait, driver, By.xpath("//div[2]/div/div[2]/span[4]"));
         log.info("点击+1");
         //点击添加到购物车
         click(wait, driver, By.xpath("//*/text()[normalize-space(.)='Add To Cart']/parent::*"));
@@ -370,9 +393,9 @@ public class XjpDsnUtils {
             // 模拟按键输入
             element.sendKeys(String.valueOf(ch));
 
-            // 增加随机延时，范围从100到500毫秒，使打字速度更慢、更不规则
+            // 增加随机延时，范围从100到2000毫秒，使打字速度更慢、更不规则
             try {
-                Thread.sleep(100 + random.nextInt(400)); // 随机延时100到500毫秒之间
+                Thread.sleep(100 + random.nextInt(800)); // 随机延时100到800毫秒之间
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 System.out.println("Thread was interrupted during simulated typing.");
@@ -383,7 +406,7 @@ public class XjpDsnUtils {
                 element.sendKeys("\b"); // 使用退格键删除错误字符
                 // 等待一段时间后再次输入，模拟用户发现并更正错误的过程
                 try {
-                    Thread.sleep(100 + random.nextInt(400));
+                    Thread.sleep(100 + random.nextInt(800));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     System.out.println("Thread was interrupted during error correction.");
@@ -391,6 +414,7 @@ public class XjpDsnUtils {
                 element.sendKeys(String.valueOf(ch)); // 重新输入正确字符
             }
         }
+        randomSleep(1000, 5000);
     }
 
     private static void selectOption(WebDriverWait wait, WebDriver driver, String xpath) {
@@ -406,7 +430,7 @@ public class XjpDsnUtils {
         } catch (ElementClickInterceptedException e) {
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
         }
-        randomSleep(500, 3000);
+        randomSleep(1000, 5000);
     }
 
     private static void clickCheck(WebDriverWait wait, WebDriver driver, By byPath, boolean shouldBeChecked) {
@@ -419,7 +443,7 @@ public class XjpDsnUtils {
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
             }
             log.info((shouldBeChecked ? "勾选了" : "取消勾选了") + byPath.toString());
-            randomSleep(500, 3000);
+            randomSleep(1000, 5000);
         } else {
             log.info("无需改变勾选状态: " + byPath.toString());
         }
