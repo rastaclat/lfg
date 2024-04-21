@@ -73,7 +73,7 @@ class Test3 {
         chromeOptions.setExperimentalOption("useAutomationExtension", false);
         chromeOptions.setExperimentalOption("prefs", prefs);
 
-        chromeOptions.addArguments("--proxy-server=http://" + "43.159.28.105:8108");
+        chromeOptions.addArguments("--proxy-server=http://" + "43.152.114.120:19610");
 
         //chromeOptions.merge(capabilities);
 
