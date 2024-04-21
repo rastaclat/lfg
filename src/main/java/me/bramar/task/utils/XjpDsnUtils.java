@@ -67,15 +67,15 @@ public class XjpDsnUtils {
         }
         String canvasBlockerExtensionDirectoryPath = Paths.get(canvasBlockerExtensionDirectoryURL.toURI()).toFile().getAbsolutePath();
 
-        URL webRTCControlURL = Test2.class.getClassLoader().getResource("fjkmabmdepjfammlpliljpnbhleegehm_0.3.0");
+        /*URL webRTCControlURL = Test2.class.getClassLoader().getResource("fjkmabmdepjfammlpliljpnbhleegehm_0.3.0");
         if (webRTCControlURL == null) {
             System.err.println("Cannot find 'webRTC control' extension directory in resources.");
             return;
         }
-        String webRTCControlPath = Paths.get(webRTCControlURL.toURI()).toFile().getAbsolutePath();
+        String webRTCControlPath = Paths.get(webRTCControlURL.toURI()).toFile().getAbsolutePath();*/
 
         //chromeOptions.addArguments("--load-extension=" + proExtensionDirectoryPath + "," + canvasBlockerExtensionDirectoryPath + "," + webRTCLeakPreventURL);
-        chromeOptions.addArguments("--load-extension=" + canvasBlockerExtensionDirectoryPath + "," + webRTCControlPath);
+        chromeOptions.addArguments("--load-extension=" + canvasBlockerExtensionDirectoryPath);
         // 添加额外的隐匿模式和性能优化选项
         //chromeOptions.addArguments("--disable-blink-features=AutomationControlled");
 

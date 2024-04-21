@@ -1,0 +1,40 @@
+{
+  "name": "My Fingerprint",
+  "description": "Custom your browser fingerprint",
+  "version": "1.2.1",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "32": "src/assets/icon32.png",
+      "64": "src/assets/icon64.png",
+      "128": "src/assets/icon128.png"
+    }
+  },
+  "icons": {
+    "32": "src/assets/icon32.png",
+    "64": "src/assets/icon64.png",
+    "128": "src/assets/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "world": "ISOLATED",
+      "matches": ["*://*/*"],
+      "js": ["src/type.js", "src/utils.js", "src/content.js"],
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/inject.js", "src/inject.html"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "permissions": ["storage", "webNavigation"]
+}

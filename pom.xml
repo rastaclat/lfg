@@ -118,5 +118,10 @@
             <artifactId>ddddocr4j</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>5.8.0</version>
+        </dependency>
     </dependencies>
 </project>

@@ -36,12 +36,26 @@ public class Test2 {
 
         ChromeOptions chromeOptions = new ChromeOptions();
 
-        String chromeBinaryPath = "F:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
+       // String chromeBinaryPath = "F:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
+        String chromeBinaryPath = "E:\\VirtualBrowser\\Application\\VirtualBrowser.exe";
         chromeOptions.setBinary(chromeBinaryPath);
-
+        chromeOptions.addArguments("--user-data-dir=C:\\Users\\shigu\\AppData\\Local\\VirtualBrowser\\Workers\\1");
+        chromeOptions.addArguments("--worker-id=1");
+        chromeOptions.addArguments("--flag-switches-begin");
+        chromeOptions.addArguments("--flag-switches-end");
+        chromeOptions.addArguments("--flag-switches-begin");
+        chromeOptions.addArguments("--flag-switches-end");
+        chromeOptions.addArguments("--no-default-browser-check");
+        chromeOptions.addArguments("--no-first-run");
+        chromeOptions.addArguments("--no-sandbox");
+        chromeOptions.addArguments("--remote-allow-origins=*");
+        chromeOptions.addArguments("--no-default-browser-check");
+        //chromeOptions.addArguments("--remote-debugging-host=127.0.0.1");
+        //chromeOptions.addArguments("--remote-debugging-port=42985");
+        chromeOptions.addArguments("--no-default-browser-check");
         // 加载两个扩展目录
         // 获取扩展目录的绝对路径
-        URL proExtensionDirectoryURL = Test2.class.getClassLoader().getResource("pro_1.1.30");
+      /*  URL proExtensionDirectoryURL = Test2.class.getClassLoader().getResource("pro_1.1.30");
         if (proExtensionDirectoryURL == null) {
             System.err.println("Cannot find 'pro_1.1.30' extension directory in resources.");
             return;
@@ -56,17 +70,17 @@ public class Test2 {
         String canvasBlockerExtensionDirectoryPath = Paths.get(canvasBlockerExtensionDirectoryURL.toURI()).toFile().getAbsolutePath();
 
         chromeOptions.addArguments("--load-extension=" + proExtensionDirectoryPath + "," + canvasBlockerExtensionDirectoryPath);
-
+*/
         // 添加额外的隐匿模式和性能优化选项
-        chromeOptions.addArguments("--disable-blink-features=AutomationControlled");
+        //chromeOptions.addArguments("--disable-blink-features=AutomationControlled");
 
         UndetectedChromeDriver driver = UndetectedChromeDriver.builder()
-            .pageLoadStrategy(PageLoadStrategy.NONE)
+            //.pageLoadStrategy(PageLoadStrategy.NONE)
             .headless(false)
             .driverFromCFT(true)
-            .versionMain(115)
+            .versionMain(117)
             .options(chromeOptions)
-            .serviceBuilder(new ChromeDriverService.Builder().withSilent(true).withLogLevel(ChromiumDriverLogLevel.OFF))
+            //.serviceBuilder(new ChromeDriverService.Builder().withSilent(true).withLogLevel(ChromiumDriverLogLevel.OFF))
             .seleniumStealth(SeleniumStealthOptions.getDefault()).build();
 
         driver.cloudflareGet(testUrl);
