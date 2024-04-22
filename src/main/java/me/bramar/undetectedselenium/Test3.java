@@ -1,29 +1,31 @@
 package me.bramar.undetectedselenium;
 
-import cn.hutool.core.io.file.FileReader;
-import cn.hutool.core.map.MapBuilder;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.openqa.selenium.PageLoadStrategy;
-import org.openqa.selenium.Proxy;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeDriverService;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.chromium.ChromiumDriverLogLevel;
-import org.openqa.selenium.remote.CapabilityType;
-import org.openqa.selenium.remote.DesiredCapabilities;
+import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.AriaRole;
+import lombok.extern.slf4j.Slf4j;
+import org.openqa.selenium.By;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Scanner;
 
+@Slf4j
 class Test3 {
-    private static final String testUrl = "https://nowsecure.nl";
+    private static final String testUrl = "https://www.ticketlouvre.fr/louvre/b2c/index.cfm/calendar/eventCode/MusWeb";
 
     public static void main(String[] args) throws IOException, ReflectiveOperationException, URISyntaxException {
-        test2();
+        test1();
     }
 
     public static void w() {
@@ -34,108 +36,119 @@ class Test3 {
         System.out.println("Quitting");
     }
 
-    public static void test1() throws IOException, ReflectiveOperationException {
-        WebDriverManager.chromedriver().setup();
-        ChromeOptions chromeOptions = new ChromeOptions();
-        String chromeBinaryPath = "E:\\124Chrome\\Chrome\\Application\\chrome.exe";
-        chromeOptions.setBinary(chromeBinaryPath);
-        UndetectedChromeDriver driver = UndetectedChromeDriver.builder()
-                .options(chromeOptions)
-                .userDataDir("E:\\chromeData\\" + RandomUtil.getRandom().nextLong()).build();
-        driver.cloudflareGet(testUrl);
-        w();
-        driver.quit();
-    }
+    public static void test1() {
+        try (Playwright playwright = Playwright.create()) {
+            URL myFingerprintURL = Test3.class.getClassLoader().getResource("my-fingerprint-chrome-1.2.1");
+            if (myFingerprintURL == null) {
+                System.err.println("Cannot find 'my-fingerprint-chrome' extension directory in resources.");
+                return;
+            }
+            String myFingerprintPath = Paths.get(myFingerprintURL.toURI()).toFile().getAbsolutePath();
 
-    public static void test2() throws URISyntaxException {
-        ChromeOptions chromeOptions = new ChromeOptions();
-        String chromeBinaryPath = "E:\\124Chrome\\Chrome\\Application\\chrome.exe";
-        String userDataDirPath = "E:\\chromeData\\" + RandomUtil.getRandom().nextLong();
-        chromeOptions.setBinary(chromeBinaryPath);
-        chromeOptions.addArguments("--user-data-dir=" + userDataDirPath);
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(false)
+                    .setArgs(Arrays.asList(
+                            "--start-maximized",
+                            "--disable-extensions-except=" + myFingerprintPath,
+                            "--load-extension=" + myFingerprintPath,
+                            "--disable-gpu",
+                            "--hide-extensions", // 添加此行以隐藏扩展插件图标
+                            "--disable-software-rasterize",
+                            "--disable-blink-features=AutomationControlled"
+                    ))
+                            .setChromiumSandbox(false)
+                    )
+                    ;
+            BrowserContext context = browser.newContext();
+            Page page = browser.newPage();
 
-        URL myFingerprintChromeUrl = Test2.class.getClassLoader().getResource("my-fingerprint-chrome-1.2.1");
-        if (myFingerprintChromeUrl == null) {
-            System.err.println("Cannot find 'my-fingerprint-chrome-1.2.1' extension directory in resources.");
-            return;
+            String js = """
+                    Object.defineProperties(navigator, {webdriver:{get:()=>undefined}});
+                    """;
+            try {
+                page.addInitScript(js);
+                page.setViewportSize(1920,1080);
+                page.navigate(testUrl);
+               /* Locator byLabel = page.getByLabel("Dernière réactualisation");
+                if (byLabel != null) {
+                    log.info("进入等待页面，延长等待时间");
+                    page.setDefaultTimeout(90000); //90秒
+                }*/
+                page.setDefaultTimeout(60000);
+                //获取可选日期
+                // 等待元素出现
+                page.waitForSelector("td.high_availability");
+                List<ElementHandle> elementHandles = page.querySelectorAll("td.high_availability");
+                if (CollectionUtil.isEmpty(elementHandles)) {
+                    log.error("未获取到可选日期");
+                }
+
+                //获取10天后的月份
+                DateTime dateTime = DateUtil.offsetDay(new Date(), 10);
+                int offsetMonth = DateUtil.monthEnum(dateTime).getValueBaseOne();
+                int offsetDay = dateTime.dayOfMonth();
+                //获取当前月份
+                int curMonth = DateUtil.monthEnum(new Date()).getValueBaseOne();
+
+                if (offsetMonth != curMonth) {
+                    page.getByTitle("Next").click();
+                }
+                page.waitForSelector("td.high_availability");
+                List<ElementHandle> dateList = page.querySelectorAll("td.high_availability");
+                if (CollectionUtil.isEmpty(dateList)) {
+                    log.info("未获取到可选日期");
+                    browser.close();
+                }
+                int selectDay = offsetDay;
+                for (ElementHandle dateHandle : dateList) {
+                    Integer year = Convert.toInt(dateHandle.getAttribute("data-year"));
+                    int day = Integer.parseInt(dateHandle.textContent());
+                    if (day == offsetDay || day > offsetDay) {
+                        selectDay = day;
+                        log.info("选择{}年{}月{}日", year, offsetMonth, day);
+                        break;
+                    }
+                }
+                page.waitForTimeout(RandomUtil.randomInt(1000,3000));// 最大等待3秒,选择具体的日期
+                page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(Convert.toStr(selectDay)).setExact(true)).click();
+                log.info("选择日期成功");
+                page.waitForTimeout(RandomUtil.randomInt(1000,3000));
+                //page.pause();
+                page.locator("#elements #product-list div").wait();
+                page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 01 22,00 €")).getByRole(AriaRole.COMBOBOX).selectOption("1");
+                log.info("选择全价门票1份");
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Finaliser la commande")).click();
+                log.info("点击完成订单");
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                page.getByLabel("Je soutiens le Louvre en").check();
+                log.info("点击通过捐赠来支持卢浮宫");
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                page.locator("input[name=\"cgvConfirm\"]").check();
+                log.info("点击接受销售条款");
+
+                //确认订单
+                page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Confirmer votre commande")).click();
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                //输入邮箱
+                page.getByLabel("Email *").fill("shigua161@outlook.com");
+                //输入密码
+                page.getByLabel("Mot de Passe *").fill("Tqasa1213@");
+
+                browser.close();
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            } finally {
+                try {
+                    Thread.sleep(1000 * 1000); // 等待1000秒
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
-        String canvasBlockerExtensionDirectoryPath = Paths.get(myFingerprintChromeUrl.toURI()).toFile().getAbsolutePath();
-        chromeOptions.addArguments("--load-extension=" + canvasBlockerExtensionDirectoryPath);
-
-        Map<String, Object> prefs = new HashMap<String, Object>();
-        prefs.put("credentials_enable_service", false);
-        prefs.put("profile.password_manager_enabled", false);
-        chromeOptions.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
-        chromeOptions.addArguments("--disable-blink-features");
-        chromeOptions.addArguments("--disable-blink-features=AutomationControlled");
-        chromeOptions.setExperimentalOption("useAutomationExtension", false);
-        chromeOptions.addArguments("--disable-blink-features=AutomationControlled");
-        chromeOptions.setExperimentalOption("useAutomationExtension", false);
-        chromeOptions.setExperimentalOption("prefs", prefs);
-
-        chromeOptions.addArguments("--proxy-server=http://" + "43.152.114.120:19610");
-
-        //chromeOptions.merge(capabilities);
-
-        WebDriverManager.chromedriver().setup();
-        ChromeDriver driver = new ChromeDriver(chromeOptions);
-
-        SeleniumStealthOptions.getDefault().apply(driver);
-
-        // 去除seleium全部指纹特征
-        URL stealthMinUrl = Test2.class.getClassLoader().getResource("stealth.min.js");
-        String stealthMinUrlDirectoryPath = Paths.get(stealthMinUrl.toURI()).toFile().getAbsolutePath();
-        FileReader fileReader = new FileReader(stealthMinUrlDirectoryPath);
-        String js = fileReader.readString();
-        // MapBuilder是依赖hutool工具包的api
-        Map<String, Object> commandMap = MapBuilder.create(new LinkedHashMap<String, Object>()).put("source", js)
-                .build();
-        // executeCdpCommand这个api在selenium3中是没有的,请使用selenium4才能使用此api
-        ((ChromeDriver) driver).executeCdpCommand("Page.addScriptToEvaluateOnNewDocument", commandMap);
-        driver.get(testUrl);
-
-        // 在这里执行针对每个浏览器实例的其他自动化操作...
-        w();
-        // 关闭当前浏览器实例
-        driver.quit();
-
-
-        //driver.quit();
     }
 
-    public static void test3() throws IOException, ReflectiveOperationException {
-        UndetectedChromeDriver driver = UndetectedChromeDriver.builder()
-                .pageLoadStrategy(PageLoadStrategy.NONE)
-                .headless(false)
-                .driverFromCFT(true)
-                .versionMain(115)
-                .autoOpenDevtools(true)
-                .serviceBuilder(new ChromeDriverService.Builder().withSilent(true).withLogLevel(ChromiumDriverLogLevel.OFF))
-                .seleniumStealth(SeleniumStealthOptions.getDefault()).build();
-        System.out.println("Bypassed: " + driver.cloudflareGet(testUrl));
-        w();
-        driver.quit();
-    }
 
-    public static void cloudflareTest() throws IOException, ReflectiveOperationException, InterruptedException {
-        int success = 0;
-        int fail = 0;
-        int attempts = 100;
-        boolean headless = false;
-        for (int i = 0; i < attempts; i++) {
-            UndetectedChromeDriver driver = UndetectedChromeDriver.builder()
-                    .pageLoadStrategy(PageLoadStrategy.NONE)
-                    .headless(headless)
-                    .driverFromCFT(true)
-                    .versionMain(115)
-                    .autoOpenDevtools(true)
-                    .seleniumStealth(SeleniumStealthOptions.getDefault()).build();
-            if (driver.cloudflareGet(testUrl)) success++;
-            else fail++;
-            Thread.sleep(2391);
-            driver.quit();
-            System.out.println((headless ? "Headless" : "Headful") + " Success: " + success + " Fail: " + fail + " | Success Rate: " + (success / attempts * 100d) + "% Attempts = " + (i + 1) + "/" + attempts + " (" + ((i + 1) / attempts * 100d) + "%)");
-        }
-        System.out.println((headless ? "Headless" : "Headful") + " Success: " + success + " Fail: " + fail + " | Success Rate: " + (success / attempts * 100d) + "%");
-    }
 }
