@@ -15,6 +15,8 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumDriverLogLevel;
+import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -48,7 +50,7 @@ public class XjpDsnUtils {
 
         ChromeOptions chromeOptions = new ChromeOptions();
 
-        String chromeBinaryPath = "E:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
+        String chromeBinaryPath = "F:\\Chrome\\App\\chrome.exe"; // Update this with the actual Chrome path
         chromeOptions.setBinary(chromeBinaryPath);
 
         // 加载两个扩展目录
@@ -78,6 +80,12 @@ public class XjpDsnUtils {
         chromeOptions.addArguments("--load-extension=" + canvasBlockerExtensionDirectoryPath);
         // 添加额外的隐匿模式和性能优化选项
         //chromeOptions.addArguments("--disable-blink-features=AutomationControlled");
+
+        /*// 配置代理
+        Proxy proxy = new Proxy();
+        proxy.setSocksProxy("4bc39dc4cb9da0c4.vbf.na.roxlabs.vip:4600");  // 代理服务器地址和端口
+        proxy.setSocksVersion(5);  // 设置 SOCKS 版本，通常为 4 或 5
+        chromeOptions.setCapability("proxy", proxy);*/
 
         UndetectedChromeDriver driver = UndetectedChromeDriver.builder()
                 .pageLoadStrategy(PageLoadStrategy.NONE)
