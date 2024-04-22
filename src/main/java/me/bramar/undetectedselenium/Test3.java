@@ -20,6 +20,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
 @Slf4j
 class Test3 {
     private static final String testUrl = "https://www.ticketlouvre.fr/louvre/b2c/index.cfm/calendar/eventCode/MusWeb";
@@ -51,7 +53,7 @@ class Test3 {
                             "--start-maximized",
                             "--disable-extensions-except=" + myFingerprintPath,
                             "--load-extension=" + myFingerprintPath,
-                            "--disable-gpu",
+                            //"--disable-gpu",
                             "--hide-extensions", // 添加此行以隐藏扩展插件图标
                             "--disable-software-rasterize",
                             "--disable-blink-features=AutomationControlled"
@@ -113,9 +115,10 @@ class Test3 {
                 page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(Convert.toStr(selectDay)).setExact(true)).click();
                 log.info("选择日期成功");
                 page.waitForTimeout(RandomUtil.randomInt(1000,3000));
-                //page.pause();
-                page.locator("#elements #product-list div").wait();
-                page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 01 22,00 €")).getByRole(AriaRole.COMBOBOX).selectOption("1");
+                page.pause();
+                assertThat(page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).getByRole(AriaRole.COMBOBOX)).isVisible();
+                page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).locator("div").nth(1).click();
+                page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).getByRole(AriaRole.COMBOBOX).selectOption("1");
                 log.info("选择全价门票1份");
                 page.waitForTimeout(RandomUtil.randomInt(1000,2000));
                 page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Finaliser la commande")).click();
