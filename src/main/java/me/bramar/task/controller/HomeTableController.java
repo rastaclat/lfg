@@ -427,24 +427,14 @@ public class HomeTableController implements Initializable {
             for (int i = 0; i < list.size(); i++) {
                 CreditCardInfo creditCardInfo = list.get(i);
                 executorService.submit(() -> {
-                    while (running.get()) {
-                        if (paused.get()) {
-                            try {
-                                Thread.sleep(100); // 暂停时简单休眠
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                            }
-                            continue;
-                        }
-                        // 执行具体的任务逻辑
-                        try {
-                            LfgUtils.start(creditCardInfo);
-                            //XjpDsnUtils.executeMethod(creditCardInfo);
-                        } catch (Exception e) {
-                            log.error("执行任务失败", e);
-                        }
-
+                    // 执行具体的任务逻辑
+                    try {
+                        LfgUtils.start(creditCardInfo);
+                        //XjpDsnUtils.executeMethod(creditCardInfo);
+                    } catch (Exception e) {
+                        log.error("执行任务失败", e);
                     }
+
                 });
             }
             updateButtonLabel();
