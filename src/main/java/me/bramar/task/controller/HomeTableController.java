@@ -22,7 +22,6 @@ import me.bramar.task.service.ICreditCardInfoService;
 import me.bramar.task.utils.LfgUtils;
 import me.bramar.task.utils.NameParser;
 import me.bramar.task.utils.PhoneNumberUtils;
-import me.bramar.task.utils.XjpDsnUtils;
 import net.datafaker.Faker;
 import net.datafaker.providers.base.Address;
 import net.datafaker.providers.base.Name;

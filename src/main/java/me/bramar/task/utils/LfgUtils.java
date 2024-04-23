@@ -8,16 +8,21 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSON;
 import com.dtflys.forest.Forest;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import lombok.extern.slf4j.Slf4j;
 import me.bramar.task.entity.CreditCardInfo;
+import me.bramar.task.entity.IpProxyInfo;
+import me.bramar.task.entity.common.Ret;
+import me.bramar.task.entity.dao.CheckAgentDO;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
@@ -26,7 +31,10 @@ public class LfgUtils {
     private static final String ipUrl = "http://api.tq.roxlabs.cn/getProxyIp?num=6&return_type=txt&lb=1&sb=&flow=1&regions=us&protocol=http";
 
     public static void main(String[] args) throws IOException, ReflectiveOperationException, URISyntaxException {
-        test1();
+        LocalDateTime dt = Convert.toLocalDateTime("2024-04");
+        System.out.println(dt);
+
+       // test1();
     }
 
     public static void w() {
@@ -63,9 +71,32 @@ public class LfgUtils {
                 "--disable-blink-features=AutomationControlled"
             );
             List<String> allParamList = new ArrayList<>(defaultParamList);
+            String selectIpProxy = "";
             if (CollectionUtil.isNotEmpty(ipList)) {
+                for (String ipAddress : ipList) {
+                    String[] ipArray = ipAddress.split(":");
+                    if (ipArray.length > 1) {
+                        IpProxyInfo ipProxyInfo = new IpProxyInfo();
+                        ipProxyInfo.setHost(ipArray[0]);
+                        ipProxyInfo.setPort(Convert.toInt(ipArray[1]));
+                        Ret<CheckAgentDO> checkAgentDO =
+                            ProxyUtils.getCheckAgentDO(ipProxyInfo);
+                        if (checkAgentDO.getCode() == 0) {
+                            log.info("ip检测成功");
+                            selectIpProxy = ipAddress;
+                            CheckAgentDO agentDO = checkAgentDO.getData();
+                            log.info(JSON.toJSONString(agentDO));
+                            break;
+                        }
+                    }
+                }
                 //socks://
-                allParamList.add("--proxy-server=http://" + ipList.get(0));
+                if (StrUtil.isNotBlank(selectIpProxy)) {
+                    allParamList.add("--proxy-server=http://" + selectIpProxy);
+                }else {
+                    log.error("获取代理ip失败");
+                    return;
+                }
             }
 
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
@@ -173,7 +204,7 @@ public class LfgUtils {
                 //登录
                 page.locator("#jq-user-form-submit").click();
                 page.waitForTimeout(RandomUtil.randomInt(1000,2000));
-                //page.pause();
+                page.pause();
                 browser.close();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
