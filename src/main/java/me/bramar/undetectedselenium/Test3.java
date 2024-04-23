@@ -4,31 +4,30 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.WaitForSelectorState;
+import com.microsoft.playwright.options.AriaRole;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 import java.util.Scanner;
+
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 @Slf4j
 class Test3 {
-    private static final String testUrl = "https://www.ticketlouvre.fr/louvre/b2c/index.cfm/home";
-    private static final String testUrl2 = "https://www.ticketlouvre.fr/louvre/b2c/index.cfm/calendar/eventCode/MusWeb";
-    public static int waitTime = 60;
+    private static final String testUrl = "https://www.ticketlouvre.fr/louvre/b2c/index.cfm/calendar/eventCode/MusWeb";
 
-    public static void main(String[] args) throws IOException, ReflectiveOperationException, URISyntaxException, InterruptedException {
-        test2();
+    public static void main(String[] args) throws IOException, ReflectiveOperationException, URISyntaxException {
+        test1();
     }
 
     public static void w() {
@@ -39,197 +38,120 @@ class Test3 {
         System.out.println("Quitting");
     }
 
-
-    public static void test2() throws URISyntaxException, InterruptedException {
-        // 设置扩展的路径
-        URL myFingerprintChromeUrl = Test3.class.getClassLoader().getResource("my-fingerprint-chrome-1.2.1");
-        if (myFingerprintChromeUrl == null) {
-            System.err.println("Cannot find 'my-fingerprint-chrome-1.2.1' extension directory in resources.");
-            return;
-        }
-        String myFingerprintChromeUrlPath = Paths.get(myFingerprintChromeUrl.toURI()).toFile().getAbsolutePath();
-        // Playwright 实例
+    public static void test1() {
         try (Playwright playwright = Playwright.create()) {
-            // 创建浏览器类型
-            BrowserType browserType = playwright.chromium();
+            URL myFingerprintURL = Test3.class.getClassLoader().getResource("my-fingerprint-chrome-1.2.1");
+            if (myFingerprintURL == null) {
+                System.err.println("Cannot find 'my-fingerprint-chrome' extension directory in resources.");
+                return;
+            }
+            String myFingerprintPath = Paths.get(myFingerprintURL.toURI()).toFile().getAbsolutePath();
 
-            // 启动参数配置
-            BrowserType.LaunchOptions options = new BrowserType.LaunchOptions()
-                .setHeadless(false) // 设置为非无头模式
-                .setArgs(List.of(
-                    "--start-maximized", // 启动最大化
-                    "--disable-extensions-except=" + myFingerprintChromeUrlPath,
-                    "--load-extension=" + myFingerprintChromeUrlPath,
-                    "--disable-blink-features=AutomationControlled",
-                    "--disable-gpu",
-                    "--disable-software-rasterize"));
-            // 启动浏览器
-            Browser browser = browserType.launch(options);
-            // 创建浏览器上下文
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                    .setHeadless(false)
+                    .setArgs(Arrays.asList(
+                            "--start-maximized",
+                            "--disable-extensions-except=" + myFingerprintPath,
+                            "--load-extension=" + myFingerprintPath,
+                            //"--disable-gpu",
+                            "--hide-extensions", // 添加此行以隐藏扩展插件图标
+                            "--disable-software-rasterize",
+                            "--disable-blink-features=AutomationControlled"
+                    ))
+                            .setChromiumSandbox(false)
+                    )
+                    ;
             BrowserContext context = browser.newContext();
-            // 创建页面
-            Page page = context.newPage();
-            // JavaScript 脚本用于修改 navigator 对象，防止检测到自动化工具
-            String js = "Object.defineProperties(navigator, {webdriver:{get:()=>undefined}});";
+            Page page = browser.newPage();
 
-            // 在每个新页面加载前执行 JavaScript
-            page.addInitScript(js);
-            // 尝试导航，最多重试三次
-            boolean success = false;
-            for (int i = 0; i < 3 && !success; i++) {
-                try {
-                    page.navigate(testUrl2);
-                    success = true; // 页面成功加载
-                } catch (PlaywrightException e) {
-                    System.out.println("网络错误，正在尝试重新连接... (" + (i + 1) + ")");
-                    try {
-                        Thread.sleep(2000); // 等待2秒后重试
-                    } catch (InterruptedException ex) {
-                        Thread.currentThread().interrupt();
+            String js = """
+                    Object.defineProperties(navigator, {webdriver:{get:()=>undefined}});
+                    """;
+            try {
+                page.addInitScript(js);
+                page.setViewportSize(1920,1080);
+                page.navigate(testUrl);
+               /* Locator byLabel = page.getByLabel("Dernière réactualisation");
+                if (byLabel != null) {
+                    log.info("进入等待页面，延长等待时间");
+                    page.setDefaultTimeout(90000); //90秒
+                }*/
+                page.setDefaultTimeout(60000);
+                //获取可选日期
+                // 等待元素出现
+                page.waitForSelector("td.high_availability");
+                List<ElementHandle> elementHandles = page.querySelectorAll("td.high_availability");
+                if (CollectionUtil.isEmpty(elementHandles)) {
+                    log.error("未获取到可选日期");
+                }
+
+                //获取10天后的月份
+                DateTime dateTime = DateUtil.offsetDay(new Date(), 10);
+                int offsetMonth = DateUtil.monthEnum(dateTime).getValueBaseOne();
+                int offsetDay = dateTime.dayOfMonth();
+                //获取当前月份
+                int curMonth = DateUtil.monthEnum(new Date()).getValueBaseOne();
+
+                if (offsetMonth != curMonth) {
+                    page.getByTitle("Next").click();
+                }
+                page.waitForSelector("td.high_availability");
+                List<ElementHandle> dateList = page.querySelectorAll("td.high_availability");
+                if (CollectionUtil.isEmpty(dateList)) {
+                    log.info("未获取到可选日期");
+                    browser.close();
+                }
+                int selectDay = offsetDay;
+                for (ElementHandle dateHandle : dateList) {
+                    Integer year = Convert.toInt(dateHandle.getAttribute("data-year"));
+                    int day = Integer.parseInt(dateHandle.textContent());
+                    if (day == offsetDay || day > offsetDay) {
+                        selectDay = day;
+                        log.info("选择{}年{}月{}日", year, offsetMonth, day);
+                        break;
                     }
                 }
-            }
+                page.waitForTimeout(RandomUtil.randomInt(1000,3000));// 最大等待3秒,选择具体的日期
+                page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(Convert.toStr(selectDay)).setExact(true)).click();
+                log.info("选择日期成功");
+                page.waitForTimeout(RandomUtil.randomInt(1000,3000));
+                page.pause();
+                assertThat(page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).getByRole(AriaRole.COMBOBOX)).isVisible();
+                page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).locator("div").nth(1).click();
+                page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).getByRole(AriaRole.COMBOBOX).selectOption("1");
+                log.info("选择全价门票1份");
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Finaliser la commande")).click();
+                log.info("点击完成订单");
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                page.getByLabel("Je soutiens le Louvre en").check();
+                log.info("点击通过捐赠来支持卢浮宫");
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                page.locator("input[name=\"cgvConfirm\"]").check();
+                log.info("点击接受销售条款");
 
-            if (!success) {
-                System.out.println("无法加载页面，请检查网络连接");
-                return;
-            }
+                //确认订单
+                page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Confirmer votre commande")).click();
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                //输入邮箱
+                page.getByLabel("Email *").fill("shigua161@outlook.com");
+                //输入密码
+                page.getByLabel("Mot de Passe *").fill("Tqasa1213@");
 
-            log.info("打开网页");
-            //2.找到可选日期
-            // 等待日期选择器元素加载完毕
-            page.waitForSelector(".ui-datepicker");
-            List<ElementHandle> elementHandles = page.querySelectorAll("td.high_availability");
-            // 获取当前日期，并偏移10天作为参考日期
-            LocalDate referenceDate = LocalDate.now().plusDays(10);
-            int curMonthValue = referenceDate.getMonthValue();
-            if (CollectionUtil.isEmpty(elementHandles)) {
-                log.info("没有找到日期元素");
-                return;
-            }
-            ElementHandle elementHandle1 = elementHandles.get(0);
-            String selectMonth = elementHandle1.getAttribute("data-month");
-            if (Convert.toInt(selectMonth) != curMonthValue) {
-                //点击下个月重新查找
-                page.locator("//div[@id='vcDialogTitle0']|//div[@role='documentcontent']").waitFor();
-                page.locator("//div[@id='vcDialogTitle0']|//div[@role='documentcontent']").click();
-
-                elementHandles = page.querySelectorAll("td.high_availability"); //123主页
-
-                if (CollectionUtil.isEmpty(elementHandles)) {
-                    log.info("从下个月中，没有找到日期元素");
-                    return;
+                browser.close();
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            } finally {
+                try {
+                    Thread.sleep(1000 * 1000); // 等待1000秒
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
-
-           /* for (ElementHandle elementHandle : elementHandles) {
-                String year = elementHandle.getAttribute("data-year"); // 2024
-                String month = elementHandle.getAttribute("data-month"); // 4
-                String day = elementHandle.textContent(); // 3
-
-                if (curMonthValue != Integer.parseInt(month)){
-                    //点击下个月重新查找
-                    Locator nextMonth = page.locator("button.ui-datepicker-next");
-                    // 确保元素可点击，然后点击
-                    nextMonth.click();
-                }
-                System.out.println(curMonthValue);
-                // 将年月日字符串转换为 LocalDate 对象
-                LocalDate candidateDate = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(day));
-
-                // 检查候选日期是否大于等于参考日期
-                if (candidateDate.isAfter(referenceDate)) {
-                    System.out.println("Found a date greater than or equal to 10 days after today: " + candidateDate);
-                }
-            }*/
-
-            /*// 获取月份
-            // 获取当前显示的月份和年份
-            String year = page.querySelector(".ui-datepicker-year").textContent();
-            System.out.println("年份"+year) ;
-            String month = page.querySelector(".ui-datepicker-month").textContent();
-            System.out.println("月份"+month) ;
-            // 获取所有可点击的日期元素
-            List<ElementHandle> elementHandles = page.querySelectorAll(".high_availability[data-handler='selectDay'] a");
-            // 假设我们要找到最近的可选择日期
-            if (!elementHandles.isEmpty()) {
-                for (ElementHandle elementHandle : elementHandles) {
-
-                }
-                ElementHandle elementHandle = elementHandles.get(0);
-                String nearestDate = elementHandle.textContent();
-                System.out.println("最近的可选择日期是: " + nearestDate);
-                elementHandle.click();
-            } else {
-                System.out.println("没有可选择的日期.");
-            }*/
-
-            //3.选择票数
-            // 等待<select>元素可见
-            Locator selectElement = page.locator(".jq-basket-item-quantity");
-            selectElement.waitFor();
-
-            // 点击<select>打开选项列表
-            selectElement.click();
-            // 选择值为"1"的<option>
-            page.locator("option[value='1']").click();
-            System.out.println("选择订单");
-
-            // 4.点击确认订单
-            Locator finalizeButton = page.locator("a.button-next.jq-a-disable.jq-basket-submit.jq-basket-submit-do");
-            finalizeButton.click();
-
-            // 5.同意协议
-            Locator checkbox = page.locator("input[name='cgvConfirm']");
-            checkbox.waitFor();
-
-            // 检查复选框是否已经被选中
-            if (!checkbox.isChecked()) {
-                // 如果复选框未被选中，则点击它
-                checkbox.click();
-            }
-
-            // 6.点击确认订单
-            Locator checkoutConfirmButton = page.locator("#jq-checkout-confirm");
-            checkoutConfirmButton.click();
-            // 在这里执行针对每个浏览器实例的其他自动化操作...
-            w();
-            browser.close();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 
 
-    private static void click(Page page, String xpath) {
-        // 等待元素可见并可点击
-        page.waitForSelector(xpath, new Page.WaitForSelectorOptions().setState(WaitForSelectorState.VISIBLE));
-        Locator element = page.locator(xpath);
-
-        // 将元素滚动到视图中心
-        element.scrollIntoViewIfNeeded();
-
-        // 等待一段时间以确保滚动完成
-        page.waitForTimeout(500);
-
-        try {
-            // 尝试正常点击
-            element.click();
-        } catch (PlaywrightException e) {
-            // 如果点击失败，记录异常处理
-            System.out.println("点击异常，尝试备选方案");
-            // 可以继续添加其他备选点击方法
-        }
-        // 额外的等待时间，以确保点击后的操作有时间执行
-        page.waitForTimeout(1000);
-    }
-
-    // 随机等待方法
-    private static void randomSleep(int min, int max) {
-        Random random = new Random();
-        try {
-            Thread.sleep(min + random.nextInt(max - min));
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.out.println("Interrupted during random sleep.");
-        }
-    }
 }
