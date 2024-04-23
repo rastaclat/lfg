@@ -53,7 +53,7 @@ class Test3 {
                             "--start-maximized",
                             "--disable-extensions-except=" + myFingerprintPath,
                             "--load-extension=" + myFingerprintPath,
-                            //"--disable-gpu",
+                            "--disable-gpu",
                             "--hide-extensions", // 添加此行以隐藏扩展插件图标
                             "--disable-software-rasterize",
                             "--disable-blink-features=AutomationControlled"
@@ -63,14 +63,33 @@ class Test3 {
                     ;
             BrowserContext context = browser.newContext();
             Page page = browser.newPage();
+            String js = "Object.defineProperties(navigator, {webdriver:{get:()=>undefined}});";
 
-            String js = """
-                    Object.defineProperties(navigator, {webdriver:{get:()=>undefined}});
-                    """;
             try {
                 page.addInitScript(js);
-                page.setViewportSize(1920,1080);
-                page.navigate(testUrl);
+                //page.setViewportSize(1920,1080);
+                // 尝试导航，最多重试三次
+                boolean success = false;
+                for (int i = 0; i < 3 && !success; i++) {
+                    try {
+                        page.navigate(testUrl);
+                        success = true; // 页面成功加载
+                    } catch (PlaywrightException e) {
+                        System.out.println("网络错误，正在尝试重新连接... (" + (i + 1) + ")");
+                        try {
+                            Thread.sleep(2000); // 等待2秒后重试
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+
+                if (!success) {
+                    System.out.println("无法加载页面，请检查网络连接");
+                    return;
+                }
+
+                log.info("打开网页");
                /* Locator byLabel = page.getByLabel("Dernière réactualisation");
                 if (byLabel != null) {
                     log.info("进入等待页面，延长等待时间");
@@ -115,7 +134,6 @@ class Test3 {
                 page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName(Convert.toStr(selectDay)).setExact(true)).click();
                 log.info("选择日期成功");
                 page.waitForTimeout(RandomUtil.randomInt(1000,3000));
-                page.pause();
                 assertThat(page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).getByRole(AriaRole.COMBOBOX)).isVisible();
                 page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).locator("div").nth(1).click();
                 page.locator("#elements #product-list div").filter(new Locator.FilterOptions().setHasText("Plein Tarif Musée 0123456 22,")).getByRole(AriaRole.COMBOBOX).selectOption("1");
@@ -134,10 +152,15 @@ class Test3 {
                 page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Confirmer votre commande")).click();
                 page.waitForTimeout(RandomUtil.randomInt(1000,2000));
                 //输入邮箱
-                page.getByLabel("Email *").fill("shigua161@outlook.com");
+                page.getByLabel("Email *").fill("thatiand20@outlook.com");
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
                 //输入密码
-                page.getByLabel("Mot de Passe *").fill("Tqasa1213@");
-
+                page.getByLabel("Mot de Passe *").fill("Suiyan2021@");
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                //登录
+                page.locator("#jq-user-form-submit").click();
+                page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                //page.pause();
                 browser.close();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
@@ -152,6 +175,5 @@ class Test3 {
             throw new RuntimeException(e);
         }
     }
-
 
 }

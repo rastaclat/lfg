@@ -19,6 +19,7 @@ import javafx.util.converter.DefaultStringConverter;
 import lombok.extern.slf4j.Slf4j;
 import me.bramar.task.entity.CreditCardInfo;
 import me.bramar.task.service.ICreditCardInfoService;
+import me.bramar.task.utils.LfgUtils;
 import me.bramar.task.utils.NameParser;
 import me.bramar.task.utils.PhoneNumberUtils;
 import me.bramar.task.utils.XjpDsnUtils;
@@ -438,13 +439,10 @@ public class HomeTableController implements Initializable {
                         }
                         // 执行具体的任务逻辑
                         try {
-                            XjpDsnUtils.executeMethod(creditCardInfo);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        } catch (ReflectiveOperationException e) {
-                            throw new RuntimeException(e);
-                        } catch (URISyntaxException e) {
-                            throw new RuntimeException(e);
+                            LfgUtils.start(creditCardInfo);
+                            //XjpDsnUtils.executeMethod(creditCardInfo);
+                        } catch (Exception e) {
+                            log.error("执行任务失败", e);
                         }
 
                     }
