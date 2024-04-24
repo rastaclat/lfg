@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -37,6 +38,7 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
@@ -104,6 +106,7 @@ public class HomeTableController implements Initializable {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean paused = new AtomicBoolean(true);
     private ExecutorService executorService;
+
 
     public void parseAndLoadData(String content) {
         if (StrUtil.isNotBlank(content)) {
@@ -403,50 +406,69 @@ public class HomeTableController implements Initializable {
         cvvView.refresh();
     }
 
-    public void executeTask(ActionEvent actionEvent) {
-        if (paused.getAndSet(false)) {
-            if (!running.getAndSet(true)) {
+    @FXML
+    private void executeTask(ActionEvent event) {
+        // 切换任务状态
+        if (paused.getAndSet(false)) { // 如果当前是暂停状态，点击后开始执行
+            if (!running.getAndSet(true)) { // 如果任务未在运行，启动它
                 startTasks();
-            } else {
-                // 任务已经在运行，此时点击表示暂停
-                paused.set(true);
-                updateButtonLabel();
+                Platform.runLater(() -> executeButton.setText("停止")); // 更新按钮文本
             }
         } else {
             // 暂停任务
+            stopTasks();
             paused.set(true);
-            updateButtonLabel();
+            running.set(false);
+            Platform.runLater(() -> executeButton.setText("执行")); // 更新按钮文本
         }
     }
 
     private void startTasks() {
-        // 示例任务：在这里启动您的具体任务
-        // 这里仅为示例，您需要替换为实际任务逻辑
+        ensureExecutorService();  // 确保线程池是活跃的
         List<CreditCardInfo> list = creditCardInfoService.list();
         if (CollectionUtil.isNotEmpty(list)) {
-            for (int i = 0; i < list.size(); i++) {
-                CreditCardInfo creditCardInfo = list.get(i);
+            for (CreditCardInfo info : list) {
+
                 executorService.submit(() -> {
-                    // 执行具体的任务逻辑
                     try {
-                        LfgUtils.start(creditCardInfo);
-                        //XjpDsnUtils.executeMethod(creditCardInfo);
+                        LfgUtils.start(info); // 执行具体任务
                     } catch (Exception e) {
                         log.error("执行任务失败", e);
                     }
-
                 });
             }
-            updateButtonLabel();
         }
     }
 
+    private void stopTasks() {
+        // 停止正在执行的任务
+        if (!executorService.isShutdown() && !executorService.isShutdown()) {
+            executorService.shutdownNow(); // 尝试立即停止所有正在执行的任务
+            try {
+                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow(); // 如果任务仍未结束，再次尝试停止
+                }
+            } catch (InterruptedException ex) {
+                executorService.shutdownNow(); // 在中断时尝试停止
+                Thread.currentThread().interrupt();
+            }
+        }
+        // 关闭所有活跃的浏览器实例
+        LfgUtils.closeAllBrowsers();
+    }
 
     private void updateButtonLabel() {
         if (paused.get()) {
             executeButton.setText("执行");
         } else {
             executeButton.setText("暂停");
+        }
+    }
+
+    private void ensureExecutorService() {
+        // 检查并重新初始化线程池
+        if (executorService == null || executorService.isShutdown()) {
+            executorService = Executors.newFixedThreadPool(5);
         }
     }
 }
