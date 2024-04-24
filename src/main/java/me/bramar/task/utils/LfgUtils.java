@@ -48,7 +48,7 @@ public class LfgUtils {
     public static void start(CreditCardInfo creditCardInfo) {
         List<String> ipList = new ArrayList<>();
         if (StrUtil.isNotBlank(ipUrl)) {
-            String ipStr = Forest.get(ipUrl).executeAsString();
+            String ipStr = Forest.get(ipUrl).connectTimeout(5000).executeAsString();
             if (StrUtil.isNotBlank(ipStr)) {
                 ipList.addAll(StrUtil.split(ipStr, "\r\n"));
             }
@@ -142,6 +142,7 @@ public class LfgUtils {
                 page.setDefaultTimeout(60000);
                 //获取可选日期
                 // 等待元素出现
+                page.waitForTimeout(RandomUtil.randomInt(2000,4000));
                 page.waitForSelector("td.high_availability");
                 List<ElementHandle> elementHandles = page.querySelectorAll("td.high_availability");
                 if (CollectionUtil.isEmpty(elementHandles)) {
@@ -204,6 +205,14 @@ public class LfgUtils {
                 //登录
                 page.locator("#jq-user-form-submit").click();
                 page.waitForTimeout(RandomUtil.randomInt(1000,2000));
+                //输入姓
+                page.getByLabel("Nom *", new Page.GetByLabelOptions().setExact(true)).fill(creditCardInfo.getFirstName());
+                page.waitForTimeout(RandomUtil.randomInt(1000,4000));
+                //输入名
+                page.getByLabel("Prénom *").fill(creditCardInfo.getLastName());
+                page.waitForTimeout(RandomUtil.randomInt(2000,4000));
+               //点击支付
+                page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Paiement")).click();
                 page.pause();
                 browser.close();
             } catch (Exception e) {
