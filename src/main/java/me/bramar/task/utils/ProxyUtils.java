@@ -15,7 +15,7 @@ import java.io.IOException;
 
 public class ProxyUtils {
     static final String GET_IP = "https://ipinfo.io/ip";
-    static final String GET_PROXY_INFO = "http://ip234.in/ip.json";
+    static final String GET_PROXY_INFO = "https://ip234.in/ip.json";
     static final Integer TIMEOUT = 60000; //10秒
 
    /* public static void main(String[] args) throws IOException {
@@ -65,8 +65,6 @@ public class ProxyUtils {
             ForestResponse forestResponse = Forest.get(GET_PROXY_INFO)
                     .proxy(forestProxy)
                     .setCacheBackendClient(Boolean.FALSE) //关闭后端Client缓存
-                    .maxRetryCount(3)         // 最大重试次数为 3
-                    .maxRetryInterval(1000)   // 最大重试间隔为1000ms
                     .executeAsResponse();
             if (forestResponse.isSuccess()) {
                 String body = Convert.toStr(forestResponse.getResult());
