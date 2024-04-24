@@ -107,6 +107,7 @@ public class HomeTableController implements Initializable {
     private final AtomicBoolean paused = new AtomicBoolean(true);
     private ExecutorService executorService;
 
+    private boolean isEditMode = false;
 
     public void parseAndLoadData(String content) {
         if (StrUtil.isNotBlank(content)) {
@@ -268,6 +269,17 @@ public class HomeTableController implements Initializable {
         // 初始化时创建线程池
         executorService = Executors.newFixedThreadPool(5);
         updateButtonLabel();
+        initializeTable();
+    }
+
+    private void initializeTable() {
+        setupEditableColumns();
+        updateButtonVisibility(false); // 初始时不显示保存和取消按钮
+    }
+
+    private void setupEditableColumns() {
+        // 初始设置所有列为不可编辑
+        setColumnsEditable(false);
     }
 
     /**
@@ -343,26 +355,44 @@ public class HomeTableController implements Initializable {
 
     //保存按钮，保存数据
     public void saveCvvData() {
-        //先删除以前的数据
+        // 先删除以前的数据
         creditCardInfoService.remove(new QueryWrapper<>());
-        //保存或修改CCV数据
+        // 保存或修改CCV数据
         if (CollectionUtil.isNotEmpty(cvvView.getItems())) {
             creditCardInfoService.saveOrUpdateBatch(cvvView.getItems());
         }
 
-        //将新数据放入originalData，作为备份
+        // 将新数据放入originalData，作为备份
         originalDataList.clear();
         originalDataList.addAll(creditCardInfoService.list());
-        //保存后，恢复置为不可见
+        // 保存后，恢复按钮和保存按钮置为不可见
         saveButton.setVisible(Boolean.FALSE);
         restoreButton.setVisible(Boolean.FALSE);
-        //取消可以编辑的状态
-        this.updateColumnEditable(Boolean.FALSE);
+        // 取消可以编辑的状态
+        //this.updateColumnEditable(Boolean.FALSE);
+        setColumnsEditable(Boolean.FALSE);
+        // 更新 isEditMode 状态
+        isEditMode = false;
+        updateButtonVisibility(isEditMode); // 根据当前的编辑模式，更新按钮的可见性
+        cvvView.edit(-1, null); // 结束任何激活的编辑
     }
 
     //编辑按钮，将每一行都变为可编辑
     public void modifyCvvData(ActionEvent actionEvent) {
-        this.updateColumnEditable(Boolean.TRUE);
+        isEditMode = !isEditMode; // 切换编辑模式状态
+        setColumnsEditable(isEditMode); // 设置列的可编辑状态
+        updateButtonVisibility(isEditMode); // 根据是否是编辑模式显示或隐藏按钮
+    }
+
+    private void setColumnsEditable(boolean editable) {
+        // 遍历所有列，设置为可编辑或不可编辑
+        for (TableColumn column : cvvView.getColumns()) {
+            column.setEditable(editable);
+        }
+    }
+    private void updateButtonVisibility(boolean visible) {
+        saveButton.setVisible(visible);
+        restoreButton.setVisible(visible);
     }
 
     private void updateColumnEditable(Boolean isEdit) {
@@ -392,18 +422,14 @@ public class HomeTableController implements Initializable {
             cvvView.setItems(FXCollections.observableArrayList(creditCardInfos));
             cvvView.refresh();
         }
-        restoreButton.setVisible(Boolean.FALSE);
-        saveButton.setVisible(Boolean.FALSE);
-
-    }
-
-    public void refreshTableView() {
-        List<CreditCardInfo> creditCardInfos = creditCardInfoService.list();
-        ObservableList<CreditCardInfo> observableList = FXCollections.observableArrayList(creditCardInfos);
-        originalDataList.clear();
-        originalDataList.addAll(creditCardInfoService.list()); //防止添加的是引用
-        cvvView.setItems(observableList);
-        cvvView.refresh();
+        // 明确设置为非编辑模式
+        isEditMode = false;
+        // 禁用表格的编辑功能
+        setColumnsEditable(false);
+        // 更新按钮可见性
+        updateButtonVisibility(false);
+        // 结束任何激活的编辑
+        cvvView.edit(-1, null);
     }
 
     @FXML
