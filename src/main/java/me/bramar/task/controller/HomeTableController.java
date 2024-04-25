@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -37,6 +38,7 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
@@ -104,6 +106,8 @@ public class HomeTableController implements Initializable {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean paused = new AtomicBoolean(true);
     private ExecutorService executorService;
+
+    private boolean isEditMode = false;
 
     public void parseAndLoadData(String content) {
         if (StrUtil.isNotBlank(content)) {
@@ -265,6 +269,17 @@ public class HomeTableController implements Initializable {
         // 初始化时创建线程池
         executorService = Executors.newFixedThreadPool(5);
         updateButtonLabel();
+        initializeTable();
+    }
+
+    private void initializeTable() {
+        setupEditableColumns();
+        updateButtonVisibility(false); // 初始时不显示保存和取消按钮
+    }
+
+    private void setupEditableColumns() {
+        // 初始设置所有列为不可编辑
+        setColumnsEditable(false);
     }
 
     /**
@@ -340,26 +355,44 @@ public class HomeTableController implements Initializable {
 
     //保存按钮，保存数据
     public void saveCvvData() {
-        //先删除以前的数据
+        // 先删除以前的数据
         creditCardInfoService.remove(new QueryWrapper<>());
-        //保存或修改CCV数据
+        // 保存或修改CCV数据
         if (CollectionUtil.isNotEmpty(cvvView.getItems())) {
             creditCardInfoService.saveOrUpdateBatch(cvvView.getItems());
         }
 
-        //将新数据放入originalData，作为备份
+        // 将新数据放入originalData，作为备份
         originalDataList.clear();
         originalDataList.addAll(creditCardInfoService.list());
-        //保存后，恢复置为不可见
+        // 保存后，恢复按钮和保存按钮置为不可见
         saveButton.setVisible(Boolean.FALSE);
         restoreButton.setVisible(Boolean.FALSE);
-        //取消可以编辑的状态
-        this.updateColumnEditable(Boolean.FALSE);
+        // 取消可以编辑的状态
+        //this.updateColumnEditable(Boolean.FALSE);
+        setColumnsEditable(Boolean.FALSE);
+        // 更新 isEditMode 状态
+        isEditMode = false;
+        updateButtonVisibility(isEditMode); // 根据当前的编辑模式，更新按钮的可见性
+        cvvView.edit(-1, null); // 结束任何激活的编辑
     }
 
     //编辑按钮，将每一行都变为可编辑
     public void modifyCvvData(ActionEvent actionEvent) {
-        this.updateColumnEditable(Boolean.TRUE);
+        isEditMode = !isEditMode; // 切换编辑模式状态
+        setColumnsEditable(isEditMode); // 设置列的可编辑状态
+        updateButtonVisibility(isEditMode); // 根据是否是编辑模式显示或隐藏按钮
+    }
+
+    private void setColumnsEditable(boolean editable) {
+        // 遍历所有列，设置为可编辑或不可编辑
+        for (TableColumn column : cvvView.getColumns()) {
+            column.setEditable(editable);
+        }
+    }
+    private void updateButtonVisibility(boolean visible) {
+        saveButton.setVisible(visible);
+        restoreButton.setVisible(visible);
     }
 
     private void updateColumnEditable(Boolean isEdit) {
@@ -389,64 +422,79 @@ public class HomeTableController implements Initializable {
             cvvView.setItems(FXCollections.observableArrayList(creditCardInfos));
             cvvView.refresh();
         }
-        restoreButton.setVisible(Boolean.FALSE);
-        saveButton.setVisible(Boolean.FALSE);
-
+        // 明确设置为非编辑模式
+        isEditMode = false;
+        // 禁用表格的编辑功能
+        setColumnsEditable(false);
+        // 更新按钮可见性
+        updateButtonVisibility(false);
+        // 结束任何激活的编辑
+        cvvView.edit(-1, null);
     }
 
-    public void refreshTableView() {
-        List<CreditCardInfo> creditCardInfos = creditCardInfoService.list();
-        ObservableList<CreditCardInfo> observableList = FXCollections.observableArrayList(creditCardInfos);
-        originalDataList.clear();
-        originalDataList.addAll(creditCardInfoService.list()); //防止添加的是引用
-        cvvView.setItems(observableList);
-        cvvView.refresh();
-    }
-
-    public void executeTask(ActionEvent actionEvent) {
-        if (paused.getAndSet(false)) {
-            if (!running.getAndSet(true)) {
+    @FXML
+    private void executeTask(ActionEvent event) {
+        // 切换任务状态
+        if (paused.getAndSet(false)) { // 如果当前是暂停状态，点击后开始执行
+            if (!running.getAndSet(true)) { // 如果任务未在运行，启动它
                 startTasks();
-            } else {
-                // 任务已经在运行，此时点击表示暂停
-                paused.set(true);
-                updateButtonLabel();
+                Platform.runLater(() -> executeButton.setText("停止")); // 更新按钮文本
             }
         } else {
             // 暂停任务
+            stopTasks();
             paused.set(true);
-            updateButtonLabel();
+            running.set(false);
+            Platform.runLater(() -> executeButton.setText("执行")); // 更新按钮文本
         }
     }
 
     private void startTasks() {
-        // 示例任务：在这里启动您的具体任务
-        // 这里仅为示例，您需要替换为实际任务逻辑
+        ensureExecutorService();  // 确保线程池是活跃的
         List<CreditCardInfo> list = creditCardInfoService.list();
         if (CollectionUtil.isNotEmpty(list)) {
-            for (int i = 0; i < list.size(); i++) {
-                CreditCardInfo creditCardInfo = list.get(i);
+            for (CreditCardInfo info : list) {
+
                 executorService.submit(() -> {
-                    // 执行具体的任务逻辑
                     try {
-                        LfgUtils.start(creditCardInfo);
-                        //XjpDsnUtils.executeMethod(creditCardInfo);
+                        LfgUtils.start(info); // 执行具体任务
                     } catch (Exception e) {
                         log.error("执行任务失败", e);
                     }
-
                 });
             }
-            updateButtonLabel();
         }
     }
 
+    private void stopTasks() {
+        // 停止正在执行的任务
+        if (!executorService.isShutdown() && !executorService.isShutdown()) {
+            executorService.shutdownNow(); // 尝试立即停止所有正在执行的任务
+            try {
+                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow(); // 如果任务仍未结束，再次尝试停止
+                }
+            } catch (InterruptedException ex) {
+                executorService.shutdownNow(); // 在中断时尝试停止
+                Thread.currentThread().interrupt();
+            }
+        }
+        // 关闭所有活跃的浏览器实例
+        LfgUtils.closeAllBrowsers();
+    }
 
     private void updateButtonLabel() {
         if (paused.get()) {
             executeButton.setText("执行");
         } else {
             executeButton.setText("暂停");
+        }
+    }
+
+    private void ensureExecutorService() {
+        // 检查并重新初始化线程池
+        if (executorService == null || executorService.isShutdown()) {
+            executorService = Executors.newFixedThreadPool(5);
         }
     }
 }
