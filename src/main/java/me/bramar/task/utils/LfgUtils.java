@@ -9,9 +9,9 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
-import com.dtflys.forest.Forest;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import me.bramar.task.entity.CreditCardInfo;
 import me.bramar.task.entity.IpProxyInfo;
@@ -64,13 +64,13 @@ public class LfgUtils {
             String myFingerprintPath = Paths.get(myFingerprintURL.toURI()).toFile().getAbsolutePath();
 
             List<String> defaultParamList = Arrays.asList(
-                    "--start-maximized",
-                    "--disable-extensions-except=" + myFingerprintPath,
-                    "--load-extension=" + myFingerprintPath,
-                    "--disable-gpu",
-                    "--hide-extensions", // 添加此行以隐藏扩展插件图标
-                    "--disable-software-rasterize",
-                    "--disable-blink-features=AutomationControlled"
+                "--start-maximized",
+                "--disable-extensions-except=" + myFingerprintPath,
+                "--load-extension=" + myFingerprintPath,
+                "--disable-gpu",
+                "--hide-extensions", // 添加此行以隐藏扩展插件图标
+                "--disable-software-rasterize",
+                "--disable-blink-features=AutomationControlled"
             );
             List<String> allParamList = new ArrayList<>(defaultParamList);
             if (CollectionUtil.isNotEmpty(ipList)) {
@@ -82,7 +82,7 @@ public class LfgUtils {
                         ipProxyInfo.setHost(ipArray[0]);
                         ipProxyInfo.setPort(Convert.toInt(ipArray[1]));
                         Ret<CheckAgentDO> checkAgentDO =
-                                ProxyUtils.getCheckAgentDO(ipProxyInfo);
+                            ProxyUtils.getCheckAgentDO(ipProxyInfo);
                         if (checkAgentDO.getCode() == 0) {
                             log.info("ip检测成功");
                             selectIpProxy = ipAddress;
@@ -102,9 +102,9 @@ public class LfgUtils {
             }
 
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                    .setHeadless(false)
-                    .setArgs(allParamList)
-                    .setChromiumSandbox(false)
+                .setHeadless(false)
+                .setArgs(allParamList)
+                .setChromiumSandbox(false)
             );
             // 将浏览器实例存入映射
             activeBrowsers.put(Thread.currentThread().getId(), browser);
@@ -146,10 +146,18 @@ public class LfgUtils {
                 //获取可选日期
                 // 等待元素出现
                 page.waitForTimeout(RandomUtil.randomInt(2000, 4000));
-                page.waitForSelector("td.high_availability");
-                List<ElementHandle> elementHandles = page.querySelectorAll("td.high_availability");
+                page.waitForSelector(".datepicker"); // 确保日期选择器已加载
+                log.info("日期选择器加载完成");
+                page.waitForSelector(".ui-datepicker-calendar");
+                List<ElementHandle> elementHandles = page.querySelectorAll(".ui-datepicker-calendar .high_availability");
+                ;
+                if (CollectionUtil.isEmpty(elementHandles)) {
+                    log.info("未获取到可选日期,点击下个月");
+                    elementHandles = clickNextAndGetSelectElements(page);
+                }
                 if (CollectionUtil.isEmpty(elementHandles)) {
                     log.error("未获取到可选日期");
+                    browser.close();
                 }
 
                 //获取10天后的月份
@@ -158,19 +166,17 @@ public class LfgUtils {
                 int offsetDay = dateTime.dayOfMonth();
                 //获取当前月份
                 int curMonth = DateUtil.monthEnum(new Date()).getValueBaseOne();
-
-                if (offsetMonth != curMonth) {
+                Integer elementMonth = Convert.toInt(elementHandles.get(0).getAttribute("data-month"));
+                if (offsetMonth != curMonth && elementMonth != null && elementMonth < offsetMonth) {
                     page.waitForTimeout(RandomUtil.randomInt(4000, 6000));
-                    page.getByTitle("Next").click();
+                    elementHandles = clickNextAndGetSelectElements(page);
                 }
-                page.waitForSelector("td.high_availability");
-                List<ElementHandle> dateList = page.querySelectorAll("td.high_availability");
-                if (CollectionUtil.isEmpty(dateList)) {
+                if (CollectionUtil.isEmpty(elementHandles)) {
                     log.info("未获取到可选日期");
                     browser.close();
                 }
                 int selectDay = offsetDay;
-                for (ElementHandle dateHandle : dateList) {
+                for (ElementHandle dateHandle : elementHandles) {
                     Integer year = Convert.toInt(dateHandle.getAttribute("data-year"));
                     int day = Integer.parseInt(dateHandle.textContent());
                     if (day == offsetDay || day > offsetDay) {
@@ -249,6 +255,16 @@ public class LfgUtils {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static List<ElementHandle> clickNextAndGetSelectElements(Page page) {
+        log.info("点击下个月按钮");
+        assertThat(page.getByTitle("Next")).isVisible();
+        page.getByTitle("Next").click();
+        log.info("等待日历更新");
+        page.waitForSelector(".ui-datepicker-calendar", new Page.WaitForSelectorOptions().setTimeout(30000));
+        page.waitForTimeout(RandomUtil.randomInt(1000, 5000));
+        return page.querySelectorAll(".ui-datepicker-calendar .high_availability");
     }
 
     // 关闭并移除指定的浏览器实例
