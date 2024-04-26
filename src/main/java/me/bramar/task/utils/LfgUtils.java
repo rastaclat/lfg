@@ -11,7 +11,6 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
-import com.microsoft.playwright.options.WaitUntilState;
 import lombok.extern.slf4j.Slf4j;
 import me.bramar.task.entity.CreditCardInfo;
 import me.bramar.task.entity.IpProxyInfo;
@@ -243,6 +242,14 @@ public class LfgUtils {
                 page.waitForTimeout(RandomUtil.randomInt(2000, 4000));
                 //确定
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("VALIDER")).click();
+                page.waitForTimeout(RandomUtil.randomInt(2000,3000));
+                //判断是否出现卡号错误
+                Locator cardError = page.getByText("Attention: Carte inconnue");
+                if (cardError != null) {
+                    log.error("不支持的卡号,关闭浏览器");
+                    browser.close();
+                }
+
                 page.pause();
                 browser.close();
             } catch (Exception e) {
